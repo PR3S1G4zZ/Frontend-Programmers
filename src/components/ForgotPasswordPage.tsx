@@ -1,0 +1,92 @@
+import { useState } from "react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Mail } from "lucide-react";
+import { useSweetAlert } from "./ui/sweet-alert";
+import apiClient from "../services/apiClient";
+
+interface ForgotPasswordProps {
+  onNavigate?: (page: string) => void;
+}
+
+export function ForgotPasswordPage({ onNavigate }: ForgotPasswordProps) {
+  const [email, setEmail] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  const { showAlert, Alert } = useSweetAlert();
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSending(true);
+
+    try {
+      await apiClient.post<{ message: string }>("/auth/forgot-password", { email });
+
+      showAlert({
+        title: "Correo enviado",
+        text: "Te enviamos un correo con el enlace para restablecer tu contraseña.",
+        type: "success",
+      });
+
+    } catch (error: any) {
+      showAlert({
+        title: "Ups...",
+        text: error.message || "No pudimos contactar al servidor.",
+        type: "error",
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+      <Card className="bg-card border-border max-w-md w-full">
+        <CardHeader>
+          <CardTitle className="text-foreground text-xl text-center">
+            Recuperar contraseña
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          <form onSubmit={handleSend} className="space-y-4">
+
+            <div>
+              <label className="text-foreground mb-2 block">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  className="pl-10 text-foreground bg-background border-border"
+                  placeholder="correo@ejemplo.com"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isSending}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {isSending ? "Enviando..." : "Enviar enlace"}
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => onNavigate && onNavigate("login")}
+              className="text-primary hover:text-primary/90 block mx-auto mt-4"
+            >
+              ← Volver al inicio de sesión
+            </button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Alert />
+    </div>
+  );
+}

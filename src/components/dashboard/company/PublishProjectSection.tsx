@@ -1,0 +1,969 @@
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
+import { Button } from '../../ui/button';
+import { Input } from '../../ui/input';
+import { Textarea } from '../../ui/textarea';
+import { Label } from '../../ui/label';
+import { Badge } from '../../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { Checkbox } from '../../ui/checkbox';
+import {
+  Plus,
+  X,
+  DollarSign,
+  Eye,
+  Save,
+  Send,
+  Loader2,
+  CheckCircle
+} from 'lucide-react';
+import { useSweetAlert } from '../../ui/sweet-alert';
+import { motion } from 'framer-motion';
+import { createProject, updateProject, fundProject, type ProjectResponse } from '../../../services/projectService';
+import { fetchCategories, fetchSkills, type TaxonomyItem } from '../../../services/taxonomyService';
+
+interface Skill {
+  id: string;
+  name: string;
+  required: boolean;
+}
+
+interface PublishProjectSectionProps {
+  onSectionChange?: (section: string) => void;
+  initialData?: ProjectResponse | null;
+  isEditing?: boolean;
+}
+
+export function PublishProjectSection({ onSectionChange, initialData, isEditing = false }: PublishProjectSectionProps) {
+
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    budgetType: 'fixed',
+    budget: '',
+    hoursPerDay: '8',
+    duration: '',
+    durationType: 'months',
+    experienceLevel: 'mid',
+    priority: 'medium',
+    teamSize: '1',
+    skills: [] as string[]
+  });
+
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [newSkill, setNewSkill] = useState('');
+  const [deliverables, setDeliverables] = useState(['']);
+  const [requirements, setRequirements] = useState(['']);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [, setIsDraft] = useState(false);
+  const [categoryOptions, setCategoryOptions] = useState<TaxonomyItem[]>([]);
+  const [skillOptions, setSkillOptions] = useState<TaxonomyItem[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-guardado en localStorage
+  const autoSave = useCallback(() => {
+    if (isEditing) return; // No auto-guardar cuando se edita
+    setAutoSaveStatus('saving');
+    try {
+      localStorage.setItem('publishProject_draft', JSON.stringify({
+        formData,
+        skills,
+        deliverables,
+        requirements,
+        currentStep,
+        timestamp: Date.now()
+      }));
+      setTimeout(() => setAutoSaveStatus('saved'), 500);
+      setTimeout(() => setAutoSaveStatus('idle'), 2000);
+    } catch (error) {
+      console.error('Error auto-guardando:', error);
+    }
+  }, [formData, skills, deliverables, requirements, currentStep, isEditing]);
+
+  // Efecto para auto-guardar cuando cambian los datos
+  useEffect(() => {
+    if (isEditing) return;
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    autoSaveTimeoutRef.current = setTimeout(autoSave, 2000); // Auto-guardar 2 segundos después de que el usuario deje de escribir
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [formData, skills, deliverables, requirements, currentStep, autoSave, isEditing]);
+
+  // Cargar borrador guardado al iniciar
+  useEffect(() => {
+    if (isEditing) return;
+    const savedDraft = localStorage.getItem('publishProject_draft');
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        // Solo cargar si el borrador tiene menos de 24 horas
+        if (Date.now() - draft.timestamp < 24 * 60 * 60 * 1000) {
+          setFormData(draft.formData);
+          setSkills(draft.skills || []);
+          setDeliverables(draft.deliverables || ['']);
+          setRequirements(draft.requirements || ['']);
+          setCurrentStep(draft.currentStep || 1);
+        }
+      } catch (error) {
+        console.error('Error cargando borrador:', error);
+      }
+    }
+  }, [isEditing]);
+
+  // Limpiar borrador al guardar/enviar exitosamente
+  const clearDraft = () => {
+    localStorage.removeItem('publishProject_draft');
+    setAutoSaveStatus('idle');
+  };
+
+  const popularSkills = skillOptions.map((skill) => skill.name);
+
+  // Load initial data if editing
+  useEffect(() => {
+    if (isEditing && initialData) {
+      setFormData({
+        title: initialData.title || '',
+        description: initialData.description || '',
+        category: initialData.categories?.[0]?.id?.toString() || '',
+        budget: initialData.budget_type === 'fixed'
+          ? `${initialData.budget_min || ''}-${initialData.budget_max || ''}`
+          : initialData.budget_max?.toString() || '',
+        budgetType: initialData.budget_type || 'fixed',
+        duration: initialData.duration_value?.toString() || '',
+        durationType: initialData.duration_unit || 'weeks',
+        experienceLevel: initialData.level || '',
+        teamSize: String(initialData.max_applicants || '1'),
+        priority: initialData.priority || 'medium',
+        hoursPerDay: '8',
+        skills: []
+      });
+
+      if (initialData.skills) {
+        setSkills(initialData.skills.map(s => ({
+          id: s.id.toString(),
+          name: s.name,
+          required: false // API might not have required flag for skills yet, defaulting to false
+        })));
+      }
+
+      if (initialData.tags) {
+        setDeliverables(initialData.tags.length > 0 ? initialData.tags : ['']);
+      }
+    }
+  }, [isEditing, initialData]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTaxonomies = async () => {
+      try {
+        const [categoriesResponse, skillsResponse] = await Promise.all([
+          fetchCategories(),
+          fetchSkills(),
+        ]);
+        if (!isMounted) return;
+        setCategoryOptions(categoriesResponse.data || []);
+        setSkillOptions(skillsResponse.data || []);
+      } catch (error) {
+        console.error('Error cargando taxonomías', error);
+      }
+    };
+
+    loadTaxonomies();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const getEstimatedTotal = () => {
+    if (formData.budgetType !== 'hourly' || !formData.budget || !formData.duration) return 0;
+    const rate = Number(formData.budget);
+    const hours = Number(formData.hoursPerDay) || 8;
+    const duration = Number(formData.duration);
+    let days = duration;
+    if (formData.durationType === 'weeks') days = duration * 5;
+    if (formData.durationType === 'months') days = duration * 20;
+    return rate * hours * days;
+  };
+
+  const estimatedTotal = getEstimatedTotal();
+  const depositAmount = formData.budgetType === 'hourly'
+    ? (estimatedTotal * 0.5).toFixed(2)
+    : (Number(formData.budget || 0) * 0.5).toFixed(2);
+
+  const addSkill = (skillName: string, required: boolean = false) => {
+    if (skillName && !skills.find(s => s.name.toLowerCase() === skillName.toLowerCase())) {
+      const match = skillOptions.find(
+        (option) => option.name.toLowerCase() === skillName.toLowerCase()
+      );
+      setSkills([...skills, {
+        id: match ? String(match.id) : Date.now().toString(),
+        name: skillName,
+        required
+      }]);
+      setNewSkill('');
+    }
+  };
+
+  const removeSkill = (skillId: string) => {
+    setSkills(skills.filter(s => s.id !== skillId));
+  };
+
+  const toggleSkillRequired = (skillId: string) => {
+    setSkills(skills.map(s =>
+      s.id === skillId ? { ...s, required: !s.required } : s
+    ));
+  };
+
+  const addDeliverable = () => {
+    setDeliverables([...deliverables, '']);
+  };
+
+  const updateDeliverable = (index: number, value: string) => {
+    const updated = [...deliverables];
+    updated[index] = value;
+    setDeliverables(updated);
+  };
+
+  const removeDeliverable = (index: number) => {
+    setDeliverables(deliverables.filter((_, i) => i !== index));
+  };
+
+  const addRequirement = () => {
+    setRequirements([...requirements, '']);
+  };
+
+  const updateRequirement = (index: number, value: string) => {
+    const updated = [...requirements];
+    updated[index] = value;
+    setRequirements(updated);
+  };
+
+  const removeRequirement = (index: number) => {
+    setRequirements(requirements.filter((_, i) => i !== index));
+  };
+
+  const { showAlert, Alert } = useSweetAlert();
+
+  const handleSubmit = async (asDraft: boolean = false) => {
+    setIsDraft(asDraft);
+    setIsSubmitting(true);
+    setSubmitMessage(null);
+
+    // Validate required fields
+    if (!formData.title || !formData.description || !formData.category || !formData.budget) {
+      showAlert({
+        title: 'Campos Incompletos',
+        text: 'Por favor, completa todos los campos obligatorios (Título, Categoría, Descripción, Presupuesto) antes de publicar.',
+        type: 'warning'
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Budget parsing handled below based on type
+
+
+    // Parse team size range to max applicants number
+    let maxApplicants = 1;
+    switch (formData.teamSize) {
+      case '1': maxApplicants = 1; break;
+      case '2-3': maxApplicants = 3; break;
+      case '4-5': maxApplicants = 5; break;
+      case '6+': maxApplicants = 10; break;
+      default: maxApplicants = Number(formData.teamSize) || 1;
+    }
+
+    const skillIds = skills
+      .map((skill) => {
+        const id = Number(skill.id);
+        return Number.isFinite(id) ? id : null;
+      })
+      .filter((id): id is number => id !== null);
+
+    const budgetMin = formData.budgetType === 'hourly'
+      ? estimatedTotal
+      : Number(formData.budget);
+
+    const budgetMax = budgetMin;
+
+    let description = formData.description;
+    if (formData.budgetType === 'hourly') {
+      description += `\n\n[Detalles de Tarifa: $${formData.budget}/hora, ${formData.hoursPerDay} horas/día]`;
+    }
+
+    const payload = {
+      title: formData.title,
+      description: description,
+      budget_min: budgetMin,
+      budget_max: budgetMax,
+      budget_type: formData.budgetType,
+      duration_value: formData.duration ? Number(formData.duration) : null,
+      duration_unit: formData.durationType,
+      level: formData.experienceLevel || null,
+      priority: formData.priority,
+      max_applicants: maxApplicants,
+      tags: deliverables.filter(Boolean),
+      requirements: requirements.filter(Boolean),
+      category_ids: formData.category ? [Number(formData.category)] : [],
+      skill_ids: skillIds,
+      status: asDraft ? 'draft' : 'pending_payment', // Default to pending_payment if not draft
+    };
+
+    try {
+      if (isEditing && initialData?.id) {
+        await updateProject(String(initialData.id), payload);
+        // If editing and standard flow, just show success
+        showAlert({
+          title: '¡Proyecto Actualizado!',
+          text: 'Los cambios han sido guardados exitosamente.',
+          type: 'success'
+        });
+      } else {
+        const response = await createProject(payload);
+        const projectId = response.data.id;
+
+        if (asDraft) {
+          showAlert({
+            title: 'Borrador Guardado',
+            text: 'Tu proyecto se ha guardado como borrador.',
+            type: 'success'
+          });
+        } else {
+          // Funding Flow
+          if (projectId && budgetMin) {
+            try {
+              setSubmitMessage('Procesando depósito del 50%...');
+              await fundProject(projectId);
+              showAlert({
+                title: '¡Proyecto Publicado y Financiado!',
+                text: `Se ha depositado el 50% ($${(budgetMin * 0.5).toFixed(2)}) y el proyecto está activo.`,
+                type: 'success'
+              });
+            } catch (fundError) {
+              console.error("Fund error", fundError);
+              showAlert({
+                title: 'Proyecto Creado pero Pago Fallido',
+                text: 'El proyecto se creó pero no se pudo procesar el depósito. Por favor verifica tu saldo en la Billetera.',
+                type: 'warning'
+              });
+              // Could redirect to wallet or show retry
+            }
+          } else {
+            showAlert({
+              title: '¡Proyecto Publicado!',
+              text: 'Tu proyecto ha sido enviado.',
+              type: 'success'
+            });
+          }
+        }
+      }
+
+      if (onSectionChange) {
+        clearDraft(); // Limpiar borrador después de éxito
+        setTimeout(() => {
+          onSectionChange('my-projects');
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error procesando proyecto', error);
+      showAlert({
+        title: 'Error',
+        text: 'Hubo un problema al guardar el proyecto. Por favor intenta de nuevo.',
+        type: 'error'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const steps = [
+    { id: 1, title: 'Información Básica', description: 'Título, descripción y categoría' },
+    { id: 2, title: 'Presupuesto y Tiempo', description: 'Presupuesto, duración y fechas' },
+    { id: 3, title: 'Habilidades y Requisitos', description: 'Skills necesarios y experiencia' },
+    { id: 4, title: 'Entregables y Extras', description: 'Deliverables y información adicional' }
+  ];
+  const selectedCategoryName = categoryOptions.find((category) => String(category.id) === formData.category)?.name;
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            <div>
+              <Label htmlFor="title" className="text-white">Título del Proyecto *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Ej: Desarrollo de SaaS Dashboard para Analytics"
+                className="mt-2 bg-[#0D0D0D] border-[#333333] text-white"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Sé específico y descriptivo para atraer los mejores candidatos
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="category" className="text-white">Categoría *</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <SelectTrigger className="mt-2 bg-[#0D0D0D] border-[#333333] text-white">
+                  <SelectValue placeholder="Selecciona una categoría" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1A1A1A] border-[#333333]">
+                  {categoryOptions.map((category) => (
+                    <SelectItem key={category.id} value={String(category.id)} className="text-white hover:bg-[#333333]">
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="description" className="text-white">Descripción del Proyecto *</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Describe detalladamente el proyecto, objetivos, tecnologías preferidas..."
+                className="mt-2 bg-[#0D0D0D] border-[#333333] text-white min-h-[120px]"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Incluye contexto del negocio, objetivos técnicos y cualquier información relevante
+              </p>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label className="text-white">Tipo de Presupuesto *</Label>
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="fixed"
+                      checked={formData.budgetType === 'fixed'}
+                      onCheckedChange={() => setFormData({ ...formData, budgetType: 'fixed' })}
+                    />
+                    <Label htmlFor="fixed" className="text-white">Precio Fijo</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="hourly"
+                      checked={formData.budgetType === 'hourly'}
+                      onCheckedChange={() => setFormData({ ...formData, budgetType: 'hourly' })}
+                    />
+                    <Label htmlFor="hourly" className="text-white">Por Hora</Label>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="budget" className="text-white">
+                  Presupuesto Total ({formData.budgetType === 'fixed' ? 'Total' : 'Por Hora'}) *
+                </Label>
+                <div className="relative mt-2">
+                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    id="budget"
+                    value={formData.budget}
+                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                    placeholder={formData.budgetType === 'fixed' ? '5000' : '50'} // Simplified placeholder
+                    className="pl-10 bg-[#0D0D0D] border-[#333333] text-white"
+                  />
+                </div>
+                {formData.budget && !isNaN(Number(formData.budget)) && (
+                  <div className="mt-2 text-sm text-primary bg-primary/10 p-2 rounded">
+                    <p>Depósito requerido hoy (50%): <strong>${(Number(formData.budget) * 0.5).toFixed(2)}</strong></p>
+                    <p className="text-xs opacity-80">El 50% restante se paga al finalizar el proyecto.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {
+              formData.budgetType === 'hourly' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="hoursPerDay" className="text-white">Horas por Día</Label>
+                    <Input
+                      id="hoursPerDay"
+                      value={formData.hoursPerDay}
+                      onChange={(e) => setFormData({ ...formData, hoursPerDay: e.target.value })}
+                      placeholder="8"
+                      className="mt-2 bg-[#0D0D0D] border-[#333333] text-white"
+                    />
+                  </div>
+                </div>
+              )
+            }
+
+            {
+              formData.budgetType === 'hourly' && estimatedTotal > 0 && (
+                <div className="bg-[#1A1A1A] p-4 rounded-lg border border-[#333333]">
+                  <h4 className="text-sm font-semibold text-gray-300">Estimación de Costo del Proyecto</h4>
+                  <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Tarifa:</span> <span className="text-white">${formData.budget}/hr</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Jornada:</span> <span className="text-white">{formData.hoursPerDay} hrs/día</span>
+                    </div>
+                    <div className="col-span-2 pt-2 border-t border-[#333333] flex justify-between items-center">
+                      <span className="text-gray-400">Total Estimado ({formData.duration} {formData.durationType}):</span>
+                      <span className="text-xl font-bold text-green-400">${estimatedTotal.toLocaleString()}</span>
+                    </div>
+                    <div className="col-span-2 text-xs text-gray-500">
+                      * El depósito inicial será del 50% (${depositAmount})
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="duration" className="text-white">Duración Estimada *</Label>
+                <div className="flex mt-2 space-x-2">
+                  <Input
+                    id="duration"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    placeholder="4-6"
+                    className="bg-[#0D0D0D] border-[#333333] text-white"
+                  />
+                  <Select value={formData.durationType} onValueChange={(value) => setFormData({ ...formData, durationType: value })}>
+                    <SelectTrigger className="w-32 bg-[#0D0D0D] border-[#333333] text-white">
+                      <SelectValue placeholder="Semanas" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1A1A1A] border-[#333333]">
+                      <SelectItem value="days" className="text-white">Días</SelectItem>
+                      <SelectItem value="weeks" className="text-white">Semanas</SelectItem>
+                      <SelectItem value="months" className="text-white">Meses</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label className="text-white">Tamaño del Equipo</Label>
+                <Select value={formData.teamSize} onValueChange={(value) => setFormData({ ...formData, teamSize: value })}>
+                  <SelectTrigger className="mt-2 bg-[#0D0D0D] border-[#333333] text-white">
+                    <SelectValue placeholder="1 desarrollador" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1A1A1A] border-[#333333]">
+                    <SelectItem value="1" className="text-white">1 desarrollador</SelectItem>
+                    <SelectItem value="2-3" className="text-white">2-3 desarrolladores</SelectItem>
+                    <SelectItem value="4-5" className="text-white">4-5 desarrolladores</SelectItem>
+                    <SelectItem value="6+" className="text-white">6+ desarrolladores</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-white">Prioridad del Proyecto</Label>
+                <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value })}>
+                  <SelectTrigger className="mt-2 bg-[#0D0D0D] border-[#333333] text-white">
+                    <SelectValue placeholder="Media" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1A1A1A] border-[#333333]">
+                    <SelectItem value="low" className="text-white">Baja</SelectItem>
+                    <SelectItem value="medium" className="text-white">Media</SelectItem>
+                    <SelectItem value="high" className="text-white">Alta</SelectItem>
+                    <SelectItem value="urgent" className="text-white">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div >
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            <div>
+              <Label className="text-white">Habilidades Requeridas *</Label>
+              <div className="mt-2 space-y-4">
+                {/* Agregar nueva habilidad */}
+                <div className="flex space-x-2">
+                  <Input
+                    value={newSkill}
+                    onChange={(e) => setNewSkill(e.target.value)}
+                    placeholder="Escribe una habilidad..."
+                    className="bg-[#0D0D0D] border-[#333333] text-white"
+                    onKeyDown={(e) => e.key === 'Enter' && addSkill(newSkill)}
+                  />
+                  <Button
+                    onClick={() => addSkill(newSkill)}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Habilidades populares */}
+                <div>
+                  <p className="text-sm text-gray-400 mb-2">Habilidades populares:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {popularSkills.map((skill) => (
+                      <Button
+                        key={skill}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addSkill(skill)}
+                        className="border-[#333333] text-gray-300 hover:bg-[#333333] text-xs"
+                        disabled={skills.some(s => s.name === skill)}
+                      >
+                        {skill}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Habilidades seleccionadas */}
+                {skills.length > 0 && (
+                  <div>
+                    <p className="text-sm text-gray-400 mb-2">Habilidades seleccionadas:</p>
+                    <div className="space-y-2">
+                      {skills.map((skill) => (
+                        <div key={skill.id} className="flex items-center justify-between bg-[#0D0D0D] p-3 rounded-lg border border-[#333333]">
+                          <div className="flex items-center space-x-3">
+                            <Badge variant={skill.required ? "default" : "secondary"} className={
+                              skill.required ? "bg-primary text-primary-foreground" : "bg-[#333333] text-white"
+                            }>
+                              {skill.name}
+                            </Badge>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`required-${skill.id}`}
+                                checked={skill.required}
+                                onCheckedChange={() => toggleSkillRequired(skill.id)}
+                              />
+                              <Label htmlFor={`required-${skill.id}`} className="text-sm text-gray-300">
+                                Obligatorio
+                              </Label>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeSkill(skill.id)}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-white">Nivel de Experiencia Requerido *</Label>
+              <Select value={formData.experienceLevel} onValueChange={(value) => setFormData({ ...formData, experienceLevel: value })}>
+                <SelectTrigger className="mt-2 bg-[#0D0D0D] border-[#333333] text-white">
+                  <SelectValue placeholder="Selecciona el nivel" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1A1A1A] border-[#333333]">
+                  <SelectItem value="junior" className="text-white">Junior (0-2 años)</SelectItem>
+                  <SelectItem value="mid" className="text-white">Mid-level (3-5 años)</SelectItem>
+                  <SelectItem value="senior" className="text-white">Senior (5+ años)</SelectItem>
+                  <SelectItem value="lead" className="text-white">Tech Lead (8+ años)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-6">
+            <div>
+              <Label className="text-white">Entregables del Proyecto</Label>
+              <p className="text-sm text-gray-400 mb-3">
+                Define qué se debe entregar al finalizar el proyecto
+              </p>
+              <div className="space-y-2">
+                {deliverables.map((deliverable, index) => (
+                  <div key={index} className="flex space-x-2">
+                    <Input
+                      value={deliverable}
+                      onChange={(e) => updateDeliverable(index, e.target.value)}
+                      placeholder="Ej: Código fuente completo, documentación técnica..."
+                      className="bg-[#0D0D0D] border-[#333333] text-white"
+                    />
+                    {deliverables.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeDeliverable(index)}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addDeliverable}
+                  className="border-[#333333] text-white hover:bg-[#333333]"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Entregable
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-white">Requisitos Adicionales</Label>
+              <p className="text-sm text-gray-400 mb-3">
+                Cualquier otro requisito o consideración especial
+              </p>
+              <div className="space-y-2">
+                {requirements.map((requirement, index) => (
+                  <div key={index} className="flex space-x-2">
+                    <Input
+                      value={requirement}
+                      onChange={(e) => updateRequirement(index, e.target.value)}
+                      placeholder="Ej: Disponibilidad en horario específico, metodología ágil..."
+                      className="bg-[#0D0D0D] border-[#333333] text-white"
+                    />
+                    {requirements.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeRequirement(index)}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addRequirement}
+                  className="border-[#333333] text-white hover:bg-[#333333]"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Requisito
+                </Button>
+              </div>
+            </div>
+
+            <Card className="bg-[#0D0D0D] border-[#333333]">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <Eye className="h-5 w-5 mr-2" />
+                  Vista Previa del Proyecto
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{formData.title || 'Título del proyecto'}</h3>
+                  <p className="text-sm text-gray-400">{selectedCategoryName || 'Categoría'}</p>
+                </div>
+
+                <p className="text-gray-300 text-sm">
+                  {formData.description || 'Descripción del proyecto...'}
+                </p>
+
+                <div className="flex flex-wrap gap-2">
+                  {skills.slice(0, 5).map((skill) => (
+                    <Badge key={skill.id} variant={skill.required ? "default" : "secondary"} className={
+                      skill.required ? "bg-primary text-primary-foreground" : "bg-[#333333] text-white"
+                    }>
+                      {skill.name}
+                    </Badge>
+                  ))}
+                  {skills.length > 5 && (
+                    <Badge variant="secondary" className="bg-[#333333] text-white">
+                      +{skills.length - 5} más
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-400">Presupuesto:</span>
+                    <p className="text-white">€{formData.budget || '0'}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Duración:</span>
+                    <p className="text-white">{formData.duration} {formData.durationType}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Experiencia:</span>
+                    <p className="text-white">{formData.experienceLevel || 'No especificado'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
+      {/* Header */}
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            {isEditing ? 'Editar Proyecto' : 'Publicar Nuevo Proyecto'}
+          </h1>
+          <p className="text-gray-300">
+            {isEditing
+              ? 'Actualiza la información de tu proyecto'
+              : 'Encuentra el talento perfecto para tu proyecto en nuestra red de desarrolladores'}
+          </p>
+        </div>
+        {/* Auto-save indicator */}
+        {!isEditing && (
+          <div className="flex items-center gap-2 text-sm">
+            {autoSaveStatus === 'saving' && (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                <span className="text-gray-400">Guardando...</span>
+              </>
+            )}
+            {autoSaveStatus === 'saved' && (
+              <>
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span className="text-green-500">Guardado</span>
+              </>
+            )}
+            {autoSaveStatus === 'idle' && formData.title && (
+              <span className="text-gray-500">Sin guardar</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Progress Steps */}
+      <Card className="bg-[#1A1A1A] border-[#333333]">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            {steps.map((step) => (
+              <div key={step.id} className="flex items-center space-x-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === step.id
+                  ? 'bg-primary text-primary-foreground'
+                  : currentStep > step.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-[#333333] text-gray-400'
+                  }`}>
+                  {currentStep > step.id ? '✓' : step.id}
+                </div>
+                <div className="hidden md:block">
+                  <p className="text-sm font-medium text-white">{step.title}</p>
+                  <p className="text-xs text-gray-400">{step.description}</p>
+                </div>
+                {step.id < steps.length && (
+                  <div className={`hidden md:block w-12 h-px ${currentStep > step.id ? 'bg-primary' : 'bg-[#333333]'
+                    }`} />
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Form Content */}
+      <Card className="bg-[#1A1A1A] border-[#333333]">
+        <CardHeader>
+          <CardTitle className="text-white">
+            {steps.find(s => s.id === currentStep)?.title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderStep()}
+          </motion.div>
+        </CardContent>
+      </Card>
+
+      {submitMessage ? (
+        <div className="rounded-lg border border-[#333333] bg-[#0D0D0D] p-3 text-sm text-gray-200">
+          {submitMessage}
+        </div>
+      ) : null}
+
+      {/* Navigation Buttons */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Button
+          variant="outline"
+          onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
+          disabled={currentStep === 1 || isSubmitting}
+          className="border-[#333333] text-white hover:bg-[#333333]"
+        >
+          Anterior
+        </Button>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {!isEditing && (
+            <Button
+              variant="outline"
+              onClick={() => handleSubmit(true)}
+              disabled={isSubmitting}
+              className="border-[#333333] text-white hover:bg-[#333333]"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSubmitting ? 'Guardando...' : 'Guardar Borrador'}
+            </Button>
+          )}
+
+          {currentStep < steps.length ? (
+            <Button
+              onClick={() => setCurrentStep(Math.min(steps.length, currentStep + 1))}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Siguiente
+            </Button>
+          ) : (
+            <Button
+              onClick={() => handleSubmit(false)}
+              disabled={isSubmitting}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {isSubmitting ? 'Procesando...' : (isEditing ? 'Actualizar Proyecto' : 'Pagar 50% y Publicar')}
+            </Button>
+          )}
+        </div>
+      </div>
+      <Alert />
+    </div>
+  );
+}

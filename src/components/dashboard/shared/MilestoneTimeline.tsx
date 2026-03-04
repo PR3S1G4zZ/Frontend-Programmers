@@ -55,7 +55,6 @@ export function MilestoneTimeline({ projectId, refreshTrigger, onUpdate, userTyp
         projectId,
         onUpdate: () => {
             fetchMilestones();
-            onUpdate?.();
         },
         userType
     });
@@ -113,7 +112,6 @@ export function MilestoneTimeline({ projectId, refreshTrigger, onUpdate, userTyp
             setIsCreateDialogOpen(false);
             setNewMilestone({ title: '', description: '', amount: '', due_date: '' });
             fetchMilestones();
-            onUpdate?.();
         } catch (error: any) {
             console.error(error);
             Swal.fire({

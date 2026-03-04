@@ -254,7 +254,6 @@ export function KanbanBoard({ projectId, onUpdate, refreshTrigger, userType }: K
         projectId,
         onUpdate: () => {
             fetchMilestones();
-            onUpdate?.();
         },
         userType
     });
@@ -267,8 +266,6 @@ export function KanbanBoard({ projectId, onUpdate, refreshTrigger, userType }: K
             const response = await apiClient.get<Milestone[]>(`/projects/${projectId}/milestones`);
             const data = Array.isArray(response) ? response : (response as any).data || [];
             setMilestones(data);
-            // Also trigger update for parent components (like MilestoneTimeline)
-            onUpdate?.();
         } catch (error) {
             console.error(error);
         } finally {

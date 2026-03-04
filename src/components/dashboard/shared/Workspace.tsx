@@ -10,7 +10,9 @@ import { ReviewDialog } from './ReviewDialog';
 import apiClient from '../../../services/apiClient';
 import { completeProject, type ProjectResponse } from '../../../services/projectService';
 
-interface Project extends ProjectResponse { }
+interface Project extends ProjectResponse {
+    developer_progress?: number;
+}
 
 interface WorkspaceProps {
     projectId: number;
@@ -28,7 +30,10 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
 
     const fetchProject = async () => {
         try {
-            const response = await apiClient.get<Project>(`/projects/${projectId}`);
+            const url = selectedDeveloperId
+                ? `/projects/${projectId}?developer_id=${selectedDeveloperId}`
+                : `/projects/${projectId}`;
+            const response = await apiClient.get<Project>(url);
             // @ts-ignore
             const data = response.data || response;
             setProject(data);
@@ -37,7 +42,6 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
             if (userType === 'company' && selectedDeveloperId === null && data.applications) {
                 const acceptedApps = data.applications.filter((app: any) => app.status === 'accepted');
                 if (acceptedApps.length > 0) {
-                    // Fix: Use developer.id instead of developer_id
                     const firstDevId = Number(acceptedApps[0].developer?.id);
                     if (!isNaN(firstDevId)) {
                         setSelectedDeveloperId(firstDevId);
@@ -55,7 +59,7 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
         // Auto-refresh cada 30 segundos
         const intervalId = setInterval(fetchProject, 30000);
         return () => clearInterval(intervalId);
-    }, [projectId]); // Remove dependencies that cause looping, just keep projectId
+    }, [projectId, selectedDeveloperId]); // Refresh when developer changes or ID changes
 
     const handleGlobalRefresh = () => {
         fetchProject();
@@ -137,25 +141,37 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
                     )}
             </div>
 
-            {/* Progress Bar */}
+            {/* Progress Bars */}
             {project && (
-                <Card className="p-4 bg-card/50">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">Progreso del Proyecto</span>
-                        <span className="text-sm font-bold text-primary">
-                            {project.progress_percentage || 0}%
-                        </span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                        <div
-                            className="bg-primary h-2.5 rounded-full transition-all duration-300"
-                            style={{ width: `${project.progress_percentage || 0}%` }}
-                        ></div>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                        {project.completed_milestones_count || 0} de {project.milestones_count || 0} milestones completadas
-                    </p>
-                </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="p-4 bg-background/50 backdrop-blur-sm border-border">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium text-muted-foreground">Progreso del Proyecto</span>
+                            <span className="text-sm font-bold text-primary">{project.progress_percentage || 0}%</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                            <div
+                                className="bg-primary h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${project.progress_percentage || 0}%` }}
+                            />
+                        </div>
+                    </Card>
+
+                    <Card className="p-4 bg-background/50 backdrop-blur-sm border-border">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium text-muted-foreground">
+                                {userType === 'company' ? 'Progreso del Desarrollador' : 'Mi Progreso'}
+                            </span>
+                            <span className="text-sm font-bold text-green-500">{project.developer_progress || 0}%</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                            <div
+                                className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${project.developer_progress || 0}%` }}
+                            />
+                        </div>
+                    </Card>
+                </div>
             )}
 
             {/* Developer Selector for Company */}
@@ -191,7 +207,6 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
                     <Clock className="h-4 w-4" />
                     Línea de Tiempo del Proyecto
                 </div>
-                {/* Only render if we have a developer selected (for company) or if it's a programmer */}
                 {Boolean(userType === 'programmer' || userType === 'company') && (
                     <MilestoneTimeline
                         projectId={projectId}
@@ -199,6 +214,7 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
                         onUpdate={handleUpdate}
                         userType={userType}
                         developerId={selectedDeveloperId}
+                        acceptedDevelopers={project?.applications?.map((app: any) => app.developer).filter(Boolean)}
                     />
                 )}
             </Card>

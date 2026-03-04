@@ -21,6 +21,7 @@ interface KanbanBoardProps {
     onUpdate?: () => void;
     refreshTrigger?: number;
     userType: 'programmer' | 'company';
+    developerId?: number | null;
 }
 
 // Configuración de paginación
@@ -235,7 +236,7 @@ function ColumnWithPagination({
     );
 }
 
-export function KanbanBoard({ projectId, onUpdate, refreshTrigger, userType }: KanbanBoardProps) {
+export function KanbanBoard({ projectId, onUpdate, refreshTrigger, userType, developerId }: KanbanBoardProps) {
     const [milestones, setMilestones] = useState<Milestone[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -253,7 +254,8 @@ export function KanbanBoard({ projectId, onUpdate, refreshTrigger, userType }: K
     } = useMilestoneActions({
         projectId,
         onUpdate: onUpdate, // Updated to directly use the onUpdate prop
-        userType
+        userType,
+        developerId
     });
 
     const fetchMilestones = async () => {
@@ -261,7 +263,10 @@ export function KanbanBoard({ projectId, onUpdate, refreshTrigger, userType }: K
         if (milestones.length === 0) setLoading(true);
         setIsRefreshing(true);
         try {
-            const response = await apiClient.get<Milestone[]>(`/projects/${projectId}/milestones`);
+            const url = userType === 'company' && developerId
+                ? `/projects/${projectId}/milestones?developer_id=${developerId}`
+                : `/projects/${projectId}/milestones`;
+            const response = await apiClient.get<Milestone[]>(url);
             const data = Array.isArray(response) ? response : (response as any).data || [];
             setMilestones(data);
         } catch (error) {

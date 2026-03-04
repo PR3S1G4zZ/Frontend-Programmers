@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 import { Card } from '../../ui/card';
 import { Button } from '../../ui/button';
-import { ArrowLeft, Layout, Clock, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Layout, Clock, CheckCircle, RefreshCw } from 'lucide-react';
 import { MilestoneTimeline } from './MilestoneTimeline';
 import { KanbanBoard } from './KanbanBoard';
 import { ReviewDialog } from './ReviewDialog';
@@ -24,28 +24,39 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
     const [isCompleting, setIsCompleting] = useState(false);
     const [showReviewDialog, setShowReviewDialog] = useState(false);
     const [projectCompleted, setProjectCompleted] = useState(false);
+    const [selectedDeveloperId, setSelectedDeveloperId] = useState<number | null>(null);
+
+    const fetchProject = async () => {
+        try {
+            const response = await apiClient.get<Project>(`/projects/${projectId}`);
+            // @ts-ignore
+            const data = response.data || response;
+            setProject(data);
+            setProjectCompleted(data.status === 'completed');
+
+            if (userType === 'company' && selectedDeveloperId === null && data.applications) {
+                const acceptedApps = data.applications.filter((app: any) => app.status === 'accepted');
+                if (acceptedApps.length > 0) {
+                    setSelectedDeveloperId(acceptedApps[0].developer_id);
+                }
+            }
+        } catch (error) {
+            console.error("Error loading project", error);
+        }
+    };
 
     useEffect(() => {
-        const fetchProject = async () => {
-            try {
-                const response = await apiClient.get<Project>(`/projects/${projectId}`);
-                // API usually returns wrapped resource, check structure
-                // Adjust if necessary based on API response
-                // Assuming standard response for now
-                // @ts-ignore
-                const data = response.data || response;
-                setProject(data);
-                setProjectCompleted(data.status === 'completed');
-            } catch (error) {
-                console.error("Error loading project", error);
-            }
-        };
         fetchProject();
 
         // Auto-refresh cada 30 segundos
         const intervalId = setInterval(fetchProject, 30000);
         return () => clearInterval(intervalId);
-    }, [projectId]);
+    }, [projectId]); // Remove dependencies that cause looping, just keep projectId
+
+    const handleGlobalRefresh = () => {
+        fetchProject();
+        setRefreshTrigger(prev => prev + 1);
+    };
 
     const handleUpdate = () => {
         setRefreshTrigger(prev => prev + 1);
@@ -100,6 +111,11 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
                         )}
                     </p>
                 </div>
+                {/* Global Refresh Button */}
+                <Button variant="outline" size="sm" onClick={handleGlobalRefresh} className="border-border text-muted-foreground hover:text-foreground">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Actualizar Todo
+                </Button>
                 {/* Complete Project Button - Only for company when all milestones completed */}
                 {userType === 'company' &&
                     project &&
@@ -138,13 +154,48 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
                 </Card>
             )}
 
+            {/* Developer Selector for Company */}
+            {userType === 'company' && project?.applications && (
+                <Card className="p-4 bg-card/50">
+                    <div className="flex items-center gap-4">
+                        <span className="text-sm font-medium">Ver progreso de:</span>
+                        <select
+                            className="bg-background border border-border rounded-md px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary"
+                            value={selectedDeveloperId || ''}
+                            onChange={(e) => {
+                                setSelectedDeveloperId(Number(e.target.value));
+                                handleUpdate();
+                            }}
+                        >
+                            <option value="" disabled>Seleccionar Desarrollador</option>
+                            {project.applications
+                                .filter((app: any) => app.status === 'accepted')
+                                .map((app: any) => (
+                                    <option key={app.developer_id} value={app.developer_id}>
+                                        {app.developer?.name || `Desarrollador #${app.developer_id}`}
+                                    </option>
+                                ))}
+                        </select>
+                    </div>
+                </Card>
+            )}
+
             {/* Timeline (Always Visible at top, collapsible potentially) */}
             <Card className="p-4 bg-card/50">
                 <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-muted-foreground">
                     <Clock className="h-4 w-4" />
                     Línea de Tiempo del Proyecto
                 </div>
-                <MilestoneTimeline projectId={projectId} refreshTrigger={refreshTrigger} onUpdate={handleUpdate} userType={userType} />
+                {/* Only render if we have a developer selected (for company) or if it's a programmer */}
+                {(userType === 'programmer' || selectedDeveloperId) && (
+                    <MilestoneTimeline
+                        projectId={projectId}
+                        refreshTrigger={refreshTrigger}
+                        onUpdate={handleUpdate}
+                        userType={userType}
+                        developerId={selectedDeveloperId}
+                    />
+                )}
             </Card>
 
             {/* Main Content Areas */}
@@ -157,7 +208,15 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
                 </div>
 
                 <div className="flex-1 mt-4 min-h-0 overflow-x-auto">
-                    <KanbanBoard projectId={projectId} refreshTrigger={refreshTrigger} onUpdate={handleUpdate} userType={userType} />
+                    {(userType === 'programmer' || selectedDeveloperId) && (
+                        <KanbanBoard
+                            projectId={projectId}
+                            refreshTrigger={refreshTrigger}
+                            onUpdate={handleUpdate}
+                            userType={userType}
+                            developerId={selectedDeveloperId}
+                        />
+                    )}
                 </div>
             </div>
         </div>

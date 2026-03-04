@@ -37,7 +37,8 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
             if (userType === 'company' && selectedDeveloperId === null && data.applications) {
                 const acceptedApps = data.applications.filter((app: any) => app.status === 'accepted');
                 if (acceptedApps.length > 0) {
-                    const firstDevId = Number(acceptedApps[0].developer_id);
+                    // Fix: Use developer.id instead of developer_id
+                    const firstDevId = Number(acceptedApps[0].developer?.id);
                     if (!isNaN(firstDevId)) {
                         setSelectedDeveloperId(firstDevId);
                     }
@@ -166,16 +167,17 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
                             className="bg-background border border-border rounded-md px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary"
                             value={selectedDeveloperId || ''}
                             onChange={(e) => {
-                                setSelectedDeveloperId(Number(e.target.value));
+                                const val = e.target.value;
+                                setSelectedDeveloperId(val ? Number(val) : null);
                                 handleUpdate();
                             }}
                         >
-                            <option value="" disabled>Seleccionar Desarrollador</option>
+                            <option value="">Seleccionar desarrollador...</option>
                             {project.applications
                                 .filter((app: any) => app.status === 'accepted')
                                 .map((app: any) => (
-                                    <option key={app.developer_id} value={app.developer_id}>
-                                        {app.developer?.name || `Desarrollador #${app.developer_id}`}
+                                    <option key={app.developer?.id} value={app.developer?.id}>
+                                        {app.developer?.name || `Desarrollador #${app.developer?.id}`}
                                     </option>
                                 ))}
                         </select>
@@ -188,7 +190,6 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
                 <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-muted-foreground">
                     <Clock className="h-4 w-4" />
                     Línea de Tiempo del Proyecto
-                    <span className="ml-4 text-[10px] font-normal opacity-50">Debug: pId:{projectId} devId:{selectedDeveloperId} MT:{typeof MilestoneTimeline} KB:{typeof KanbanBoard}</span>
                 </div>
                 {/* Only render if we have a developer selected (for company) or if it's a programmer */}
                 {Boolean(userType === 'programmer' || userType === 'company') && (

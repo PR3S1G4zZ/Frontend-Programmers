@@ -26,12 +26,8 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
 
   if (!response.ok) {
     if (response.status === 401) {
-      // Limpiar toda la sesión para evitar bucles de recarga
-      authService.clearToken();
-      authService.clearStoredUser();
-      localStorage.removeItem('last_page');
-      window.location.href = '/';
-      return {} as T;
+      // Loguear el error pero no redirigir automáticamente
+      console.error('Error de autenticación: Token no válido o expirado');
     }
     throw new Error(data.message || 'Error en la petición');
   }

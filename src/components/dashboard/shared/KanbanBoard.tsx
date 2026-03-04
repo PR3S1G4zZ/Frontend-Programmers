@@ -252,9 +252,7 @@ export function KanbanBoard({ projectId, onUpdate, refreshTrigger, userType }: K
         updateStatusSimple
     } = useMilestoneActions({
         projectId,
-        onUpdate: () => {
-            fetchMilestones();
-        },
+        onUpdate: onUpdate, // Updated to directly use the onUpdate prop
         userType
     });
 

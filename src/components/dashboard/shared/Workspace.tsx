@@ -187,7 +187,7 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
                     Línea de Tiempo del Proyecto
                 </div>
                 {/* Only render if we have a developer selected (for company) or if it's a programmer */}
-                {(userType === 'programmer' || selectedDeveloperId) && (
+                {(userType === 'programmer' || userType === 'company') && (
                     <MilestoneTimeline
                         projectId={projectId}
                         refreshTrigger={refreshTrigger}

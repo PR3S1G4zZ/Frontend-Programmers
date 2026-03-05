@@ -265,7 +265,7 @@ export function KanbanBoard({ projectId, onUpdate, refreshTrigger, userType, dev
         if (milestones.length === 0) setLoading(true);
         setIsRefreshing(true);
         try {
-            const url = userType === 'company' && developerId
+            const url = developerId
                 ? `/projects/${projectId}/milestones?developer_id=${developerId}`
                 : `/projects/${projectId}/milestones`;
             const response = await apiClient.get<Milestone[]>(url);

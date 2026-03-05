@@ -38,16 +38,6 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
             const data = response.data || response;
             setProject(data);
             setProjectCompleted(data.status === 'completed');
-
-            if (userType === 'company' && selectedDeveloperId === null && data.applications) {
-                const acceptedApps = data.applications.filter((app: any) => app.status === 'accepted');
-                if (acceptedApps.length > 0) {
-                    const firstDevId = Number(acceptedApps[0].developer?.id);
-                    if (!isNaN(firstDevId)) {
-                        setSelectedDeveloperId(firstDevId);
-                    }
-                }
-            }
         } catch (error) {
             console.error("Error loading project", error);
         }
@@ -229,7 +219,7 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
                 </div>
 
                 <div className="flex-1 mt-4 min-h-0 overflow-x-auto">
-                    {Boolean(userType === 'programmer' || selectedDeveloperId) && (
+                    {Boolean(userType === 'programmer' || true) && (
                         <KanbanBoard
                             projectId={projectId}
                             refreshTrigger={refreshTrigger}

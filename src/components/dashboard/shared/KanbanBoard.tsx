@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { authService } from '../../../services/authService';
 
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
@@ -321,21 +320,14 @@ export function KanbanBoard({ projectId, onUpdate, refreshTrigger, userType, dev
             completed: []
         };
 
-        const currentUserId = authService.getStoredUser()?.id;
-
         milestones.forEach(milestone => {
-            // Si es programador, filtrar localmente por seguridad visual
-            if (userType === 'programmer' && milestone.assigned_developer_id !== currentUserId) {
-                return;
-            }
-
             if (grouped[milestone.progress_status]) {
                 grouped[milestone.progress_status].push(milestone);
             }
         });
 
         return grouped;
-    }, [milestones, userType]);
+    }, [milestones]);
 
     if (loading) {
         return (

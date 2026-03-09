@@ -60,10 +60,10 @@ export async function fetchCompanyProjects() {
   return apiRequest<{ data: ProjectResponse[] }>('/company/projects');
 }
 
-export async function createProject(payload: Record<string, unknown>) {
+export async function createProject(payload: Record<string, unknown> | FormData) {
   return apiRequest<{ data: ProjectResponse }>('/projects', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: payload instanceof FormData ? payload : JSON.stringify(payload),
   });
 }
 
@@ -73,10 +73,13 @@ export async function deleteProject(id: string) {
   });
 }
 
-export async function updateProject(id: string, payload: Record<string, unknown>) {
+export async function updateProject(id: string, payload: Record<string, unknown> | FormData) {
   return apiRequest<{ data: ProjectResponse }>(`/projects/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(payload),
+    method: payload instanceof FormData ? 'POST' : 'PUT',
+    body: payload instanceof FormData ? (() => {
+      payload.append('_method', 'PUT');
+      return payload;
+    })() : JSON.stringify(payload),
   });
 }
 

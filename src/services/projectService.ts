@@ -24,7 +24,15 @@ export type ProjectResponse = {
   categories: Array<{ id: number; name: string }>;
   skills: Array<{ id: number; name: string }>;
   applications_count?: number;
-  applications?: Array<{ developer: { id: number; name: string } }>;
+  applications?: Array<{
+    status: 'pending' | 'accepted' | 'rejected';
+    developer: {
+      id: number;
+      name: string;
+      avatar?: string;
+      rating?: number;
+    }
+  }>;
   has_applied?: boolean;
   milestones_count?: number;
   completed_milestones_count?: number;

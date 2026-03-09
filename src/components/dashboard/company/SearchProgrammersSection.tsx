@@ -521,7 +521,7 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
                       <div className="flex items-center space-x-4">
                         <div className="relative">
                           <Avatar className="h-16 w-16 border-2 border-transparent group-hover:border-primary transition-colors duration-300 ring-2 ring-background">
-                            <AvatarImage src={developer.avatar} />
+                            <AvatarImage src={developer.profilePicture || ''} />
                             <AvatarFallback className="bg-gradient-to-br from-primary/80 to-purple-600/80 text-white text-lg font-bold">
                               {developer.name.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>

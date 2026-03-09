@@ -107,14 +107,14 @@ const mapProject = (project: ProjectResponse): Project => {
     deadline: project.deadline ?? '',
     developer: acceptedApplications?.[0]?.developer ? {
       name: acceptedApplications[0].developer.name,
-      avatar: undefined,
-      rating: 0
+      avatar: acceptedApplications[0].developer.avatar,
+      rating: acceptedApplications[0].developer.rating ?? 0
     } : undefined,
     developers: acceptedApplications?.map(application => ({
       id: application.developer.id,
       name: application.developer.name,
-      avatar: undefined,
-      rating: 0,
+      avatar: application.developer.avatar,
+      rating: application.developer.rating ?? 0,
       progress: 0 // Esto se actualizará con los datos del servicio
     })),
     applicants: project.applications_count ?? 0,
@@ -421,7 +421,7 @@ export function MyProjectsSection({ onSectionChange }: MyProjectsSectionProps) {
                   <SelectItem value="oldest" className="text-white">Más antiguo</SelectItem>
                   <SelectItem value="budget-high" className="text-white">Mayor presupuesto</SelectItem>
                   <SelectItem value="budget-low" className="text-white">Menor presupuesto</SelectItem>
-                  <SelectItem value="progress" className="text-white">Por progreso</SelectItem>
+                  <SelectItem value="progress-high" className="text-white">Por progreso</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -578,7 +578,7 @@ export function MyProjectsSection({ onSectionChange }: MyProjectsSectionProps) {
                               <div key={developer.id} className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
                                   <Avatar className="h-8 w-8">
-                                    <AvatarImage src={developer.avatar} />
+                                    <AvatarImage src={developer.avatar || ''} />
                                     <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                                       {developer.name.split(' ').map(n => n[0]).join('')}
                                     </AvatarFallback>

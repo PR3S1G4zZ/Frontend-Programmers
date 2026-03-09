@@ -87,6 +87,8 @@ const mapProject = (project: ProjectResponse): Project => {
   let progress = 0;
   if (status === 'completed') {
     progress = 100;
+  } else if (project.progress_percentage !== undefined) {
+    progress = project.progress_percentage;
   } else if (project.milestones_count && project.milestones_count > 0) {
     progress = Math.round((project.completed_milestones_count || 0) / project.milestones_count * 100);
   } else {

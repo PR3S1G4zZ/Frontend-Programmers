@@ -307,10 +307,19 @@ export function RegisterPage({ onNavigate }: RegisterPageProps) {
       return;
     }
 
-    alert(`Registrándose con ${provider} como ${userType}...`);
-    if (onNavigate) {
-      const dashboardPage = userType === USER_TYPES.PROGRAMMER ? 'programmer-dashboard' : 'company-dashboard';
-      onNavigate(dashboardPage);
+    // Save user_type intended for registration in local storage or cookie if needed
+    localStorage.setItem('intended_user_type', userType);
+
+    if (provider === "Google") {
+      window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
+    } else if (provider === "GitHub") {
+      window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`;
+    } else {
+      alert(`Registrándose con ${provider} como ${userType}...`);
+      if (onNavigate) {
+        const dashboardPage = userType === USER_TYPES.PROGRAMMER ? 'programmer-dashboard' : 'company-dashboard';
+        onNavigate(dashboardPage);
+      }
     }
   };
 

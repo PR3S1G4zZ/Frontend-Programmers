@@ -133,6 +133,8 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
   const handleSocialLogin = (provider: string) => {
     if (provider === "Google") {
       window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
+    } else if (provider === "GitHub") {
+      window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`;
     } else {
       alert(`Iniciando sesión con ${provider}...`);
       if (onNavigate) {

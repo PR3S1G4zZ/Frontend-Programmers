@@ -4,7 +4,7 @@ import { Badge } from '../../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { ScrollArea } from '../../ui/scroll-area';
 import { MapPin, Clock, Star, Briefcase, Code, Award, X } from 'lucide-react';
-import type { DeveloperProfile } from '../../../services/developerService'; // Reuse type
+import type { DeveloperProfile } from '../../../services/developerService';
 import { Skeleton } from '../../ui/skeleton';
 
 interface DeveloperProfileModalProps {
@@ -19,7 +19,7 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-7xl w-full h-[95vh] bg-[#111] border-[#333333] p-0 overflow-hidden text-white rounded-xl flex flex-col">
+            <DialogContent className="max-w-6xl w-full h-[95vh] bg-[#111] border-[#333333] p-0 overflow-hidden text-white rounded-xl flex flex-col">
                 <DialogHeader className="sr-only">
                     <DialogTitle>Perfil de Desarrollador: {developer?.name ?? 'Cargando...'}</DialogTitle>
                     <DialogDescription>
@@ -121,9 +121,9 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                             </div>
 
                             <ScrollArea className="flex-1 pr-2 sm:pr-4 -mr-2 sm:-mr-4">
-                                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8 pb-8">
-                                    {/* Left Content (Bio/Skills/Portfolio) - Takes 7 columns on xl */}
-                                    <div className="xl:col-span-7 space-y-6 sm:space-y-8">
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 pb-8">
+                                    {/* Left Content (Bio/Skills/Portfolio) - Takes 8 columns on lg */}
+                                    <div className="lg:col-span-8 space-y-6 sm:space-y-8">
                                         {/* Bio */}
                                         <section className="bg-[#151515] p-6 sm:p-8 rounded-2xl border border-[#222] shadow-sm">
                                             <h3 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-3">
@@ -179,9 +179,9 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                                         </section>
                                     </div>
 
-                                    {/* Right Sidebar (Stats/Contact) - Takes 5 columns on xl */}
-                                    <div className="xl:col-span-5 space-y-4 sm:space-y-6">
-                                        <div className="bg-[#1A1A1A] rounded-xl p-5 sm:p-8 border border-[#333] space-y-6 sm:space-y-8 shadow-xl xl:sticky xl:top-0">
+                                    {/* Right Sidebar (Stats/Contact) - Takes 4 columns on lg */}
+                                    <div className="lg:col-span-4 space-y-4 sm:space-y-6">
+                                        <div className="bg-[#1A1A1A] rounded-xl p-5 sm:p-8 border border-[#333] space-y-6 sm:space-y-8 shadow-xl lg:sticky lg:top-0">
                                             <div className="space-y-3 sm:space-y-4">
                                                 <Button className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]">
                                                     Contactar Ahora

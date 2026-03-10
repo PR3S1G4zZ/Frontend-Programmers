@@ -404,7 +404,7 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
                   {/* Hourly Rate Filter */}
                   <div>
                     <label className="text-foreground font-medium mb-3 block">
-                      Tarifa por hora: €{filters.hourlyRate[0]}-€{filters.hourlyRate[1]}
+                      Tarifa por hora: ${filters.hourlyRate[0]}-${filters.hourlyRate[1]}
                     </label>
                     <Slider
                       value={filters.hourlyRate}
@@ -556,7 +556,7 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
                           <span className="text-[10px] text-muted-foreground">({developer.reviewsCount})</span>
                         </div>
                         <p className="text-xl font-bold text-primary mt-2">
-                          €{developer.hourlyRate}<span className="text-xs text-muted-foreground font-normal">/h</span>
+                          ${developer.hourlyRate}<span className="text-xs text-muted-foreground font-normal">/h</span>
                         </p>
                       </div>
                     </div>

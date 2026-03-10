@@ -72,9 +72,12 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                             {/* Profile Header (Overlapping Banner) */}
                             <div className="flex flex-col md:flex-row gap-4 sm:gap-6 -mt-16 relative z-10 mb-6 sm:mb-8">
                                 <Avatar className="h-24 w-24 sm:h-32 sm:w-32 border-4 border-[#111] shadow-2xl ring-4 ring-primary/10">
-                                    <AvatarImage src={developer.profilePicture || ''} alt={developer.name} />
+                                    <AvatarImage
+                                        src={developer.profilePicture ? developer.profilePicture : `https://ui-avatars.com/api/?name=${encodeURIComponent(developer.name)}&background=random`}
+                                        alt={developer.name}
+                                    />
                                     <AvatarFallback className="bg-gradient-to-br from-primary to-purple-700 text-2xl sm:text-3xl font-bold text-white">
-                                        {developer.name.charAt(0)}
+                                        {developer.name.split(' ').map(n => n[0]).join('')}
                                     </AvatarFallback>
                                 </Avatar>
 
@@ -92,7 +95,7 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                                             <p className="text-lg sm:text-xl text-primary font-medium">{developer.title}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-2xl sm:text-3xl font-bold text-white">€{developer.hourlyRate}<span className="text-sm text-gray-500 font-normal">/h</span></p>
+                                            <p className="text-2xl sm:text-3xl font-bold text-white">${developer.hourlyRate}<span className="text-sm text-gray-500 font-normal">/h</span></p>
                                         </div>
                                     </div>
 
@@ -188,7 +191,7 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                                             <div className="pt-6 sm:pt-8 border-t border-[#333] space-y-4 sm:space-y-6">
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-gray-400">Tarifa Hora</span>
-                                                    <span className="text-white font-bold text-lg sm:text-xl">€{developer.hourlyRate}</span>
+                                                    <span className="text-white font-bold text-lg sm:text-xl">${developer.hourlyRate}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-gray-400">Experiencia</span>

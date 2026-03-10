@@ -522,7 +522,7 @@ export function MyProjectsSection({ onSectionChange }: MyProjectsSectionProps) {
                       <div className="flex items-center space-x-2 overflow-hidden">
                         <DollarSign className="h-4 w-4 text-primary flex-shrink-0" />
                         <span className="text-white truncate">
-                          €{project.budget.toLocaleString()}{project.budgetType === 'hourly' ? '/h' : ''}
+                          ${project.budget.toLocaleString()}{project.budgetType === 'hourly' ? '/h' : ''}
                         </span>
                       </div>
 

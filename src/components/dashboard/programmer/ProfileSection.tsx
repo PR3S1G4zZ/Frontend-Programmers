@@ -484,7 +484,7 @@ export function ProfileSection() {
                         </span>
                         <span className="flex items-center text-primary">
                           <DollarSign className="h-3 w-3 mr-1" />
-                          €{profileData.hourlyRate}/hora
+                          ${profileData.hourlyRate}/hora
                         </span>
                       </div>
                     </div>
@@ -549,7 +549,7 @@ export function ProfileSection() {
                     </div>
 
                     <div>
-                      <Label htmlFor="hourlyRate" className="text-foreground">Tarifa por Hora (€)</Label>
+                      <Label htmlFor="hourlyRate" className="text-foreground">Tarifa por Hora ($)</Label>
                       <Input
                         id="hourlyRate"
                         type="number"

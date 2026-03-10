@@ -18,6 +18,7 @@ import { authService } from './services/authService';
 import { ForgotPasswordPage } from './components/ForgotPasswordPage';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { AuthCallbackPage } from './components/AuthCallbackPage';
+import { VerifySocialLinkPage } from './components/VerifySocialLinkPage';
 
 type PageType =
   | 'home'
@@ -31,7 +32,8 @@ type PageType =
   | 'admin-dashboard'
   | 'forgot-password'
   | 'reset-password'
-  | 'auth-callback';
+  | 'auth-callback'
+  | 'verify-social-link';
 
 type UserType = 'guest' | 'programmer' | 'company' | 'admin';
 
@@ -76,6 +78,11 @@ function AppContent() {
 
     if (path === "/auth/callback") {
       setCurrentPage("auth-callback");
+      hasInitialized.current = true;
+    }
+
+    if (path === "/verify-social-link") {
+      setCurrentPage("verify-social-link");
       hasInitialized.current = true;
     }
   }, []);
@@ -190,6 +197,8 @@ function AppContent() {
           return <ResetPasswordPage onNavigate={handleNavigate} />;
         case 'auth-callback':
           return <AuthCallbackPage onNavigate={handleNavigate} />;
+        case 'verify-social-link':
+          return <VerifySocialLinkPage onNavigate={handleNavigate} />;
         default:
           return <LandingPage onNavigate={handleNavigate} />;
       }

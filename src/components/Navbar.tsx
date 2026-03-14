@@ -23,8 +23,6 @@ export function Navbar({
   };
 
   const handleLogoutClick = () => {
-    // Si hay handler real de logout, úsalo.
-    // Si no, vuelve a home como fallback.
     if (onLogout) {
       onLogout();
       setIsMobileMenuOpen(false);
@@ -34,19 +32,19 @@ export function Navbar({
   };
 
   return (
-    <nav className="bg-card border-b border-border sticky top-0 z-50">
+    <nav className="bg-[#020617]/95 backdrop-blur-md border-b border-[#00FF85]/20 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <button
             type="button"
-            className="flex items-center space-x-2 cursor-pointer hover-neon"
+            className="flex items-center space-x-2 cursor-pointer hover:scale-105 transition-transform group"
             onClick={() => handleNavClick("home")}
           >
-            <span className="bg-primary p-2 rounded-lg">
-              <Code className="h-6 w-6 text-primary-foreground" />
+            <span className="bg-[#00FF85] p-2 rounded-lg shadow-[0_0_15px_rgba(0,255,133,0.3)] group-hover:shadow-[0_0_25px_rgba(0,255,133,0.5)] transition-shadow">
+              <Code className="h-6 w-6 text-slate-900" />
             </span>
-            <span className="text-2xl font-bold text-primary glow-text">
+            <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00FF85] to-green-300 drop-shadow-[0_0_10px_rgba(0,255,133,0.5)]">
               Programmers
             </span>
           </button>
@@ -57,29 +55,25 @@ export function Navbar({
               <>
                 <button
                   onClick={() => handleNavClick("home")}
-                  className={`text-foreground hover:text-primary transition-colors ${currentPage === "home" ? "text-primary" : ""
-                    }`}
+                  className={`text-sm font-semibold transition-all duration-300 ${currentPage === "home" ? "text-[#00FF85] drop-shadow-[0_0_8px_rgba(0,255,133,0.5)]" : "text-slate-300 hover:text-[#00FF85]"}`}
                 >
                   Inicio
                 </button>
                 <button
                   onClick={() => handleNavClick("for-programmers")}
-                  className={`text-foreground hover:text-primary transition-colors ${currentPage === "for-programmers" ? "text-primary" : ""
-                    }`}
+                  className={`text-sm font-semibold transition-all duration-300 ${currentPage === "for-programmers" ? "text-[#00FF85] drop-shadow-[0_0_8px_rgba(0,255,133,0.5)]" : "text-slate-300 hover:text-[#00FF85]"}`}
                 >
                   Para Programadores
                 </button>
                 <button
                   onClick={() => handleNavClick("for-companies")}
-                  className={`text-foreground hover:text-primary transition-colors ${currentPage === "for-companies" ? "text-primary" : ""
-                    }`}
+                  className={`text-sm font-semibold transition-all duration-300 ${currentPage === "for-companies" ? "text-[#00FF85] drop-shadow-[0_0_8px_rgba(0,255,133,0.5)]" : "text-slate-300 hover:text-[#00FF85]"}`}
                 >
                   Para Empresas
                 </button>
                 <button
                   onClick={() => handleNavClick("contact")}
-                  className={`text-foreground hover:text-primary transition-colors ${currentPage === "contact" ? "text-primary" : ""
-                    }`}
+                  className={`text-sm font-semibold transition-all duration-300 ${currentPage === "contact" ? "text-[#00FF85] drop-shadow-[0_0_8px_rgba(0,255,133,0.5)]" : "text-slate-300 hover:text-[#00FF85]"}`}
                 >
                   Contacto
                 </button>
@@ -94,29 +88,29 @@ export function Navbar({
                 <Button
                   variant="ghost"
                   onClick={() => handleNavClick("login")}
-                  className="text-foreground hover:text-primary hover:bg-accent"
+                  className="text-slate-300 hover:text-[#00FF85] hover:bg-[#00FF85]/10 font-bold tracking-wide"
                 >
                   Iniciar Sesión
                 </Button>
                 <Button
                   onClick={() => handleNavClick("register")}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="bg-[#00FF85] text-slate-900 hover:bg-[#00CC6A] font-bold shadow-[0_0_15px_rgba(0,255,133,0.3)] hover:shadow-[0_0_20px_rgba(0,255,133,0.5)] transition-all"
                 >
                   Registrarse
                 </Button>
               </>
             ) : (
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2 text-foreground">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 text-slate-200 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700">
                   {userType === "programmer" ? (
                     <>
-                      <User className="h-5 w-5 text-primary" />
-                      <span>Carlos Mendoza</span>
+                      <div className="bg-[#00FF85]/20 p-1 rounded-full"><User className="h-4 w-4 text-[#00FF85]" /></div>
+                      <span className="text-sm font-medium pr-1">Carlos Mendoza</span>
                     </>
                   ) : (
                     <>
-                      <Building2 className="h-5 w-5 text-primary" />
-                      <span>TechCorp SA</span>
+                      <div className="bg-[#00FF85]/20 p-1 rounded-full"><Building2 className="h-4 w-4 text-[#00FF85]" /></div>
+                      <span className="text-sm font-medium pr-1">TechCorp SA</span>
                     </>
                   )}
                 </div>
@@ -124,7 +118,7 @@ export function Navbar({
                 <Button
                   variant="ghost"
                   onClick={handleLogoutClick}
-                  className="text-foreground hover:text-primary hover:bg-accent"
+                  className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 text-sm"
                 >
                   Cerrar Sesión
                 </Button>
@@ -136,7 +130,7 @@ export function Navbar({
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-                className="rounded-md border border-border p-2 text-foreground hover:bg-accent"
+                className="rounded-md border border-slate-700 p-2 text-slate-300 hover:bg-slate-800 hover:text-[#00FF85] transition-colors"
                 aria-label="Abrir menú"
                 aria-expanded={isMobileMenuOpen}
               >
@@ -153,56 +147,49 @@ export function Navbar({
 
       {/* Mobile menu panel */}
       <div
-        className={`md:hidden ${isMobileMenuOpen ? "block" : "hidden"
-          } border-t border-border bg-card`}
+        className={`md:hidden ${
+          isMobileMenuOpen ? "block" : "hidden"
+        } border-t border-[#00FF85]/20 bg-[#020617] backdrop-blur-xl absolute w-full shadow-2xl`}
       >
-        <div className="px-4 py-4 space-y-3">
+        <div className="px-4 py-6 space-y-4">
           {userType === "guest" ? (
             <>
               <button
-                type="button"
                 onClick={() => handleNavClick("home")}
-                className={`w-full text-left text-foreground ${currentPage === "home" ? "text-primary" : ""
-                  }`}
+                className={`w-full text-left font-semibold text-lg py-2 ${currentPage === "home" ? "text-[#00FF85]" : "text-slate-300"}`}
               >
                 Inicio
               </button>
               <button
-                type="button"
                 onClick={() => handleNavClick("for-programmers")}
-                className={`w-full text-left text-foreground ${currentPage === "for-programmers" ? "text-primary" : ""
-                  }`}
+                className={`w-full text-left font-semibold text-lg py-2 ${currentPage === "for-programmers" ? "text-[#00FF85]" : "text-slate-300"}`}
               >
                 Para Programadores
               </button>
               <button
-                type="button"
                 onClick={() => handleNavClick("for-companies")}
-                className={`w-full text-left text-foreground ${currentPage === "for-companies" ? "text-primary" : ""
-                  }`}
+                className={`w-full text-left font-semibold text-lg py-2 ${currentPage === "for-companies" ? "text-[#00FF85]" : "text-slate-300"}`}
               >
                 Para Empresas
               </button>
               <button
-                type="button"
                 onClick={() => handleNavClick("contact")}
-                className={`w-full text-left text-foreground ${currentPage === "contact" ? "text-primary" : ""
-                  }`}
+                className={`w-full text-left font-semibold text-lg py-2 ${currentPage === "contact" ? "text-[#00FF85]" : "text-slate-300"}`}
               >
                 Contacto
               </button>
 
-              <div className="pt-3 border-t border-border space-y-2">
+              <div className="pt-4 mt-2 border-t border-slate-800 space-y-3">
                 <Button
                   variant="ghost"
                   onClick={() => handleNavClick("login")}
-                  className="w-full justify-start text-foreground hover:text-primary hover:bg-accent"
+                  className="w-full justify-start text-slate-300 hover:text-[#00FF85] hover:bg-[#00FF85]/10 font-bold"
                 >
                   Iniciar Sesión
                 </Button>
                 <Button
                   onClick={() => handleNavClick("register")}
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="w-full bg-[#00FF85] text-slate-900 hover:bg-[#00CC6A] font-bold"
                 >
                   Registrarse
                 </Button>
@@ -211,9 +198,8 @@ export function Navbar({
           ) : (
             <>
               <button
-                type="button"
                 onClick={() => handleNavClick("home")}
-                className="w-full text-left text-foreground"
+                className="w-full text-left font-semibold text-lg py-2 text-slate-300"
               >
                 Inicio
               </button>
@@ -221,7 +207,7 @@ export function Navbar({
               <Button
                 variant="ghost"
                 onClick={handleLogoutClick}
-                className="w-full justify-start text-foreground hover:text-primary hover:bg-accent"
+                className="w-full justify-start text-red-400 hover:bg-red-500/10 mt-4 font-bold border border-red-500/20"
               >
                 Cerrar Sesión
               </Button>

@@ -1,81 +1,56 @@
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Input } from "./ui/input";
-import { Separator } from "./ui/separator";
-import {
-  Code,
-  Mail,
-  Lock,
-  Github,
-  Chrome,
-  ArrowRight,
-  Eye,
-  EyeOff
-} from "lucide-react";
-import { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { EMAIL_SINGLE_DOT_REGEX } from "./auth/constants";
-import { useSweetAlert } from "./ui/sweet-alert";
+import React, { useState } from 'react';
+import { Mail, Lock, ArrowRight, Github, Code2, AlertCircle } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+import { useAuth } from '../contexts/AuthContext';
+
+const MySwal = withReactContent(Swal);
+
+// Reusable dark theme configuration for SweetAlert2
+const swalDarkTheme = {
+  background: '#0f172a', // slate-900
+  color: '#f8fafc', // slate-50
+  confirmButtonColor: '#00FF85',
+  confirmButtonText: '<span style="color: #020617; font-weight: bold;">Entendido</span>',
+  customClass: {
+    popup: 'border border-slate-700/50 shadow-[0_0_30px_rgba(0,255,133,0.15)] rounded-xl backdrop-blur-xl',
+    title: 'text-2xl font-bold text-white',
+    htmlContainer: 'text-slate-300',
+  }
+};
 
 interface LoginPageProps {
   onNavigate?: (page: string) => void;
 }
 
 export function LoginPage({ onNavigate }: LoginPageProps) {
-  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [emailError, setEmailError] = useState<string>("");
-  const [passwordError, setPasswordError] = useState<string>("");
-
-  const PASSWORD_NO_SPACE_REGEX = /^\S+$/;
-
-  // contador de intentos fallidos
-  const [, setFailedAttempts] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   const { login } = useAuth();
-  const { showAlert, Alert } = useSweetAlert();
 
-  // función centralizada para manejar cualquier fallo de login
-  const handleLoginFailure = () => {
-    setFailedAttempts(prev => {
-      const next = prev + 1;
-
-      if (next < 3) {
-        // intento 1 y 2
-        showAlert({
-          title: "Error de autenticación",
-          text: "Contraseña incorrecta, inténtalo nuevamente.",
-          type: "error"
-        });
-      } else {
-        // intento 3 o más
-        showAlert({
-          title: "¿Deseas recuperar tu contraseña?",
-          text: "Has realizado 3 intentos fallidos. Puedes recuperar tu contraseña desde el enlace en la pantalla.",
-          type: "warning"
-        });
-      }
-
-      return next;
+  const showAlert = (title: string, text: string, icon: 'success' | 'error' | 'warning' | 'info') => {
+    MySwal.fire({
+      title,
+      text,
+      icon,
+      ...swalDarkTheme
     });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
     if (!email || !password) {
-      showAlert({
-        title: "Campos requeridos",
-        text: "Por favor, completa todos los campos",
-        type: "warning"
-      });
+      showAlert("Campos requeridos", "Por favor, completa todos los campos", "warning");
       return;
     }
-
-    if (!EMAIL_SINGLE_DOT_REGEX.test(email)) return;
-    if (!PASSWORD_NO_SPACE_REGEX.test(password)) return;
 
     setIsLoading(true);
 
@@ -83,15 +58,7 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
       const response = await login({ email, password });
 
       if (response.success) {
-        // si loguea bien, reiniciamos intentos
-        setFailedAttempts(0);
-
-        showAlert({
-          title: "¡Bienvenido!",
-          text: `Hola ${response.user?.name}, has iniciado sesión exitosamente`,
-          type: "success",
-          timer: 2000
-        });
+        showAlert("¡Bienvenido!", `Hola ${response.user?.name}, has iniciado sesión exitosamente`, "success");
 
         if (onNavigate) {
           if (response.user?.user_type === "programmer") {
@@ -103,259 +70,215 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
           }
         }
       } else {
-        // fallo de credenciales (401, etc.)
-        // Use backend message if available
-        if (response.message) {
-          showAlert({
-            title: "Error de autenticación",
-            text: response.message,
-            type: "error"
-          });
-        } else {
-          handleLoginFailure();
-        }
-        setIsLoading(false); // Ensure loading is stopped
+        setError(response.message || "Credenciales inválidas.");
+        showAlert("Error de autenticación", response.message || "Credenciales inválidas.", "error");
       }
-    } catch (error: any) {
-      // error de red / servidor
-      const message = error?.message || "Ocurrió un error inesperado";
-      showAlert({
-        title: "Error",
-        text: message,
-        type: "error"
-      });
-      setIsLoading(false);
+    } catch (err: any) {
+      setError(err.message || "Ocurrió un error inesperado.");
+      showAlert("Error", err.message || "Ocurrió un error inesperado", "error");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    if (provider === "Google") {
-      window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
-    } else if (provider === "GitHub") {
-      window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`;
-    } else {
-      alert(`Iniciando sesión con ${provider}...`);
-      if (onNavigate) {
-        onNavigate("programmer-dashboard");
-      }
-    }
+  const handleGoogleLogin = () => {
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
+  };
+
+  const handleGithubLogin = () => {
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`;
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="absolute inset-0 code-pattern opacity-5"></div>
+    <div className="min-h-screen bg-[#020617] text-slate-200 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      
+      {/* Ambient background glows */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#00FF85]/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none z-0"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none z-0"></div>
 
-      <div className="relative max-w-md w-full space-y-8">
-        {/* Header */}
+      <div className="max-w-md w-full space-y-8 relative z-10">
         <div className="text-center">
           <div className="flex justify-center mb-6">
-            <div className="bg-primary p-3 rounded-xl">
-              <Code className="h-8 w-8 text-primary-foreground" />
+            <div className="relative">
+              <div className="absolute -inset-4 bg-[#00FF85]/20 rounded-full blur-xl animate-pulse"></div>
+              <div className="bg-slate-900 border border-[#00FF85]/30 p-4 rounded-xl relative z-10 shadow-[0_0_15px_rgba(0,255,133,0.2)]">
+                <Code2 className="h-10 w-10 text-[#00FF85]" />
+              </div>
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Bienvenido de vuelta</h1>
-          <p className="text-muted-foreground">Inicia sesión en tu cuenta de Programmers</p>
-        </div>
-
-        {/* Login Form */}
-        <Card className="bg-card border-border hover-neon">
-          <CardHeader>
-            <CardTitle className="text-xl text-foreground text-center">Iniciar Sesión</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Social Login Buttons */}
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full border-border text-foreground hover:bg-accent hover:text-accent-foreground"
-                onClick={() => handleSocialLogin("Google")}
-              >
-                <Chrome className="h-5 w-5 mr-3" />
-                Continuar con Google
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full border-border text-foreground hover:bg-accent hover:text-accent-foreground"
-                onClick={() => handleSocialLogin("GitHub")}
-              >
-                <Github className="h-5 w-5 mr-3" />
-                Continuar con GitHub
-              </Button>
-            </div>
-
-            <div className="relative">
-              <Separator className="bg-border" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="bg-card px-3 text-muted-foreground text-sm">o</span>
-              </div>
-            </div>
-
-            {/* Email/Password Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-foreground mb-2">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={email}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      if (/\s/.test(raw)) {
-                        const noSpaces = raw.replace(/\s+/g, "");
-                        setEmail(noSpaces);
-                        setEmailError("El correo no debe contener espacios.");
-                        return;
-                      }
-                      const value = raw;
-                      setEmail(value);
-                      if (!value) {
-                        setEmailError("");
-                      } else if (!EMAIL_SINGLE_DOT_REGEX.test(value)) {
-                        setEmailError(
-                          "Formato: usuario@dominio.tld (un solo punto tras \"@\")"
-                        );
-                      } else {
-                        setEmailError("");
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === " ") {
-                        e.preventDefault();
-                      }
-                    }}
-                    required
-                    aria-invalid={!!emailError}
-                    className={`pl-10 bg-background ${emailError
-                      ? "border-destructive focus:border-destructive bg-gradient-to-r from-destructive/10 to-destructive/5"
-                      : "border-border focus:border-primary"
-                      } text-foreground placeholder:text-muted-foreground`}
-                  />
-                </div>
-                {emailError && (
-                  <p className="mt-2 text-xs text-destructive">{emailError}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-foreground mb-2">Contraseña</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Tu contraseña"
-                    value={password}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setPassword(value);
-                      if (!value) {
-                        setPasswordError("");
-                      } else if (!PASSWORD_NO_SPACE_REGEX.test(value)) {
-                        setPasswordError(
-                          "La contraseña no debe contener espacios."
-                        );
-                      } else {
-                        setPasswordError("");
-                      }
-                    }}
-                    required
-                    aria-invalid={!!passwordError}
-                    className={`pl-10 pr-10 bg-background ${passwordError
-                      ? "border-destructive focus:border-destructive bg-gradient-to-r from-destructive/10 to-destructive/5"
-                      : "border-border focus:border-primary"
-                      } text-foreground placeholder:text-muted-foreground`}
-                  />
-                  {passwordError && (
-                    <p className="mt-2 text-xs text-destructive">{passwordError}</p>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="mr-2 rounded border-border bg-background text-primary focus:ring-primary"
-                  />
-                  <span className="text-sm text-muted-foreground">Recordarme</span>
-                </label>
-
-                <button
-                  type="button"
-                  className="text-sm text-primary hover:text-primary/90 transition-colors"
-                  onClick={() => onNavigate && onNavigate("forgot-password")}
-                >
-                  ¿Olvidaste tu contraseña?
-                </button>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={
-                  isLoading ||
-                  !!emailError ||
-                  !!passwordError ||
-                  !EMAIL_SINGLE_DOT_REGEX.test(email) ||
-                  !PASSWORD_NO_SPACE_REGEX.test(password)
-                }
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover-neon disabled:opacity-50"
-              >
-                {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
-                {!isLoading && <ArrowRight className="h-5 w-5 ml-2" />}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Register Link */}
-        <div className="text-center">
-          <p className="text-muted-foreground">
-            ¿No tienes cuenta?{" "}
+          <h2 className="mt-2 text-3xl font-bold text-white tracking-tight">
+            Bienvenido de nuevo a
+          </h2>
+          <div className="mt-2 text-2xl font-bold mb-4">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00FF85] to-emerald-400 glow-text drop-shadow-[0_0_15px_rgba(0,255,133,0.3)] hover:drop-shadow-[0_0_25px_rgba(0,255,133,0.5)] transition-all duration-300">
+              Programmers
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-slate-400 font-medium">
+            ¿No tienes una cuenta?{' '}
             <button
-              onClick={() => onNavigate && onNavigate("register")}
-              className="text-primary hover:text-primary/90 font-semibold transition-colors"
+              onClick={() => onNavigate && onNavigate('register')}
+              className="mt-2 inline-flex items-center text-[#00FF85] hover:text-emerald-400 transition-colors font-semibold group"
             >
-              Regístrate gratis
+              Regístrate aquí
+              <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </p>
         </div>
 
+        <Card className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 shadow-2xl overflow-hidden hover:border-[#00FF85]/30 transition-colors duration-500">
+          <CardHeader className="pb-6 border-b border-slate-800/50">
+            <CardTitle className="text-xl text-white">Inicio de Sesión</CardTitle>
+            <CardDescription className="text-slate-400">
+              Ingresa tus credenciales para acceder a tu panel
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {error && (
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start text-red-400 text-sm shadow-[inset_0_0_10px_rgba(239,68,68,0.05)]">
+                <AlertCircle className="h-5 w-5 mr-3 flex-shrink-0 mt-0.5" />
+                <p>{error}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-300 ml-1 text-left block">
+                  Correo Electrónico
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-slate-500 group-focus-within:text-[#00FF85] transition-colors" />
+                  </div>
+                  <Input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10 bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-[#00FF85] focus:ring-1 focus:ring-[#00FF85]/50 transition-all h-12"
+                    placeholder="tu@email.com"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between ml-1 mb-1">
+                  <label className="text-sm font-medium text-slate-300">
+                    Contraseña
+                  </label>
+                  <button type="button" className="text-xs font-medium text-[#00FF85] hover:text-emerald-400 hover:underline transition-colors">
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-slate-500 group-focus-within:text-[#00FF85] transition-colors" />
+                  </div>
+                  <Input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-[#00FF85] focus:ring-1 focus:ring-[#00FF85]/50 transition-all h-12"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-12 bg-[#00FF85] hover:bg-[#00FF85]/90 text-slate-900 font-bold transition-all shadow-[0_0_15px_rgba(0,255,133,0.3)] hover:shadow-[0_0_25px_rgba(0,255,133,0.5)] cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed group"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Iniciando sesión...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center">
+                    Ingresar
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4 pt-6 pb-8 bg-slate-900/30 border-t border-slate-800/50">
+            <div className="relative w-full">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-700/50"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-slate-900 px-2 text-slate-500 font-medium rounded-full">O continúa con</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 w-full">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={handleGithubLogin}
+                className="w-full h-11 bg-slate-900 border-slate-700 hover:bg-slate-800 hover:text-white transition-all text-slate-300 font-medium group"
+              >
+                <Github className="h-5 w-5 mr-2 group-hover:text-white transition-colors" />
+                GitHub
+              </Button>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={handleGoogleLogin}
+                className="w-full h-11 bg-slate-900 border-slate-700 hover:bg-slate-800 hover:text-white transition-all text-slate-300 font-medium group"
+              >
+                <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
+                  <path
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    fill="#4285F4"
+                  />
+                  <path
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    fill="#34A853"
+                  />
+                  <path
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    fill="#EA4335"
+                  />
+                </svg>
+                Google
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
+
         {/* Demo Accounts */}
-        <Card className="bg-card border-border border-dashed">
+        <Card className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 border-dashed">
           <CardContent className="p-4">
-            <h3 className="text-foreground font-semibold mb-3 text-center">
+            <h3 className="text-white font-semibold mb-3 text-center">
               Cuentas Demo
             </h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Programador:</span>
-                <code className="text-primary bg-background px-2 py-1 rounded">
+                <span className="text-slate-400">Programador:</span>
+                <code className="text-[#00FF85] bg-slate-900 border border-slate-700 px-2 py-1 rounded">
                   demo@dev.com
                 </code>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Empresa:</span>
-                <code className="text-primary bg-background px-2 py-1 rounded">
+                <span className="text-slate-400">Empresa:</span>
+                <code className="text-[#00FF85] bg-slate-900 border border-slate-700 px-2 py-1 rounded">
                   demo@company.com
                 </code>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Contraseña:</span>
-                <code className="text-primary bg-background px-2 py-1 rounded">
+                <span className="text-slate-400">Contraseña:</span>
+                <code className="text-[#00FF85] bg-slate-900 border border-slate-700 px-2 py-1 rounded">
                   demo123
                 </code>
               </div>
@@ -363,8 +286,6 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
           </CardContent>
         </Card>
       </div>
-
-      <Alert />
     </div>
   );
 }

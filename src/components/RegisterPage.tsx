@@ -1,23 +1,49 @@
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Input } from "./ui/input";
-import { Separator } from "./ui/separator";
+import React, { useState } from "react";
 import {
-  Code,
+  User,
   Mail,
   Lock,
+  Building2,
+  Code2,
   ArrowRight,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertCircle
 } from "lucide-react";
-import { useState } from "react";
-import { UserTypeSelector } from "./auth/UserTypeSelector";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
+import { Input } from "./ui/input";
+import { Separator } from "./ui/separator";
 import { SocialAuthButtons } from "./auth/SocialAuthButtons";
-import type { UserType, RegisterFormData } from "./auth/constants";
-import { USER_TYPES, INITIAL_FORM_DATA, DEMO_ACCOUNTS, EMAIL_SINGLE_DOT_REGEX } from "./auth/constants";
+import { authService, type RegisterData } from "../services/authService";
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
-import { authService } from "../services/authService";
-import { useSweetAlert } from "./ui/sweet-alert";
+const MySwal = withReactContent(Swal);
+
+// Reusable dark theme configuration for SweetAlert2
+const swalDarkTheme = {
+  background: '#0f172a', // slate-900
+  color: '#f8fafc', // slate-50
+  confirmButtonColor: '#00FF85',
+  confirmButtonText: '<span style="color: #020617; font-weight: bold;">Entendido</span>',
+  customClass: {
+    popup: 'border border-slate-700/50 shadow-[0_0_30px_rgba(0,255,133,0.15)] rounded-xl backdrop-blur-xl',
+    title: 'text-2xl font-bold text-white',
+    htmlContainer: 'text-slate-300',
+  }
+};
+
+const USER_TYPES = {
+  PROGRAMMER: 'programmer',
+  COMPANY: 'company'
+} as const;
+
+const DEMO_ACCOUNTS = [
+  { label: 'Programador', value: 'demo@dev.com' },
+  { label: 'Empresa', value: 'demo@company.com' },
+  { label: 'Contraseña', value: 'demo123' }
+];
 
 interface RegisterPageProps {
   onNavigate?: (page: string) => void;
@@ -26,660 +52,469 @@ interface RegisterPageProps {
 export function RegisterPage({ onNavigate }: RegisterPageProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [userType, setUserType] = useState<UserType | null>(null);
-  const [formData, setFormData] = useState<RegisterFormData>(INITIAL_FORM_DATA);
+  const [userType, setUserType] = useState<"programmer" | "company">(USER_TYPES.PROGRAMMER);
+  const [formData, setFormData] = useState<RegisterData>({
+    name: "",
+    lastname: "",
+    email: "",
+    password: "",
+    password_confirmation: "",
+    user_type: "programmer",
+    company_name: "",
+    position: "",
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const [emailError, setEmailError] = useState<string>("");
-  const [firstNameError, setFirstNameError] = useState<string>("");
-  const [lastNameError, setLastNameError] = useState<string>("");
-  const [passwordError, setPasswordError] = useState<string>("");
-  const [confirmPasswordError, setConfirmPasswordError] = useState<string>("");
-  const [companyNameError, setCompanyNameError] = useState<string>("");
-  const [positionError, setPositionError] = useState<string>("");
-  const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
-  const [termsTouched, setTermsTouched] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPasswordReqs, setShowPasswordReqs] = useState(false);
 
-  const NAME_REGEX = /^(?!\s)[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-\.]+(?<!\s)$/;
-  const PASSWORD_NO_SPACE_REGEX = /^\S+$/;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setError(null);
+  };
 
+  const handleUserTypeSelect = (type: "programmer" | "company") => {
+    setUserType(type);
+    setFormData((prev) => ({ ...prev, user_type: type }));
+    setError(null);
+  };
 
-  const { showAlert, Alert } = useSweetAlert();
+  const isPasswordStrong = (password: string) => {
+    const minLength = /.{8,}/;
+    const hasUpperCase = /[A-Z]/;
+    const hasLowerCase = /[a-z]/;
+    const hasDigit = /[0-9]/;
+    const hasSpecialChar = /[@$!%*?&._-]/;
 
-  const showValidationErrors = (errors: Record<string, string[]>) => {
-    console.log('showValidationErrors llamado con:', errors);
+    return (
+      minLength.test(password) &&
+      hasUpperCase.test(password) &&
+      hasLowerCase.test(password) &&
+      hasDigit.test(password) &&
+      hasSpecialChar.test(password)
+    );
+  };
 
-    // Mapear los errores del backend a mensajes más amigables
-    const errorMessages: string[] = [];
-    const requirements: string[] = [];
+  const showValidationErrors = (errors: any) => {
+    const errorMessages = typeof errors === 'string' ? [errors] : Object.values(errors).flat() as string[];
+    const isPasswordError = errorMessages.some(msg =>
+      msg.toLowerCase().includes('password') ||
+      msg.toLowerCase().includes('contraseña')
+    );
 
-    Object.entries(errors).forEach(([field, messages]) => {
-      const messageArray = Array.isArray(messages) ? messages : [messages];
+    let htmlContent = '';
+    if (isPasswordError) {
+      const currentPassword = formData.password;
+      const requirements = [
+        { regex: /.{8,}/, text: 'Mínimo 8 caracteres' },
+        { regex: /[A-Z]/, text: 'Al menos una letra mayúscula (A-Z)' },
+        { regex: /[a-z]/, text: 'Al menos una letra minúscula (a-z)' },
+        { regex: /[0-9]/, text: 'Al menos un número (0-9)' },
+        { regex: /[@$!%*?&._-]/, text: 'Al menos un carácter especial (@$!%*?&._-)' }
+      ];
 
-      messageArray.forEach((message) => {
-        const errorMsg = typeof message === 'string' ? message : String(message);
-        errorMessages.push(errorMsg);
-
-        // Agregar requisitos según el campo
-        if (field === 'email') {
-          if (!requirements.includes('El correo debe contener "@" y exactamente un punto en el dominio (ej: usuario@dominio.tld)')) {
-            requirements.push('El correo debe contener "@" y exactamente un punto en el dominio (ej: usuario@dominio.tld)');
-          }
-        } else if (field === 'password') {
-          if (message.includes('mínimo') || message.includes('min')) {
-            if (!requirements.includes('La contraseña debe tener al menos 8 caracteres')) {
-              requirements.push('La contraseña debe tener al menos 8 caracteres');
-            }
-          }
-          if (message.includes('máximo') || message.includes('max')) {
-            if (!requirements.includes('La contraseña no puede tener más de 15 caracteres')) {
-              requirements.push('La contraseña no puede tener más de 15 caracteres');
-            }
-          }
-          // Si no hay requisitos específicos de password, agregar todos los requisitos generales
-          if (requirements.filter(r => r.includes('contraseña')).length === 0) {
-            requirements.push('La contraseña debe tener entre 8 y 15 caracteres');
-            requirements.push('La contraseña no debe contener espacios');
-          }
-        } else if (field === 'name' || field === 'lastname') {
-          if (!requirements.includes('El nombre y apellido no deben tener espacios al inicio o final')) {
-            requirements.push('El nombre y apellido no deben tener espacios al inicio o final');
-          }
-        }
-      });
-    });
-
-    // Eliminar duplicados
-    const uniqueRequirements = [...new Set(requirements)];
-    const uniqueErrors = [...new Set(errorMessages)];
-
-    console.log('Errores únicos:', uniqueErrors);
-    console.log('Requisitos únicos:', uniqueRequirements);
-    console.log('Número de errores:', uniqueErrors.length);
-    console.log('Número de requisitos:', uniqueRequirements.length);
-
-    // Si no hay requisitos pero sí errores, agregar requisitos generales
-    if (uniqueRequirements.length === 0 && uniqueErrors.length > 0) {
-      uniqueRequirements.push('Revisa los errores arriba y corrige los campos correspondientes');
-    }
-
-    // Crear el contenido HTML del modal
-    const errorList = uniqueErrors.map((err, idx) => `<div class="error-item">${idx + 1}. ${err}</div>`).join('');
-    const requirementsList = uniqueRequirements.length > 0
-      ? uniqueRequirements.map((req) => `<div class="requirement-item">✓ ${req}</div>`).join('')
-      : '<div class="requirement-item">Todos los campos deben cumplir con los requisitos establecidos</div>';
-
-    console.log('Error list HTML:', errorList);
-    console.log('Requirements list HTML:', requirementsList);
-    console.log('Llamando a showAlert...');
-    console.log('uniqueErrors completo:', uniqueErrors);
-    console.log('uniqueRequirements completo:', uniqueRequirements);
-
-    // Verificar que hay contenido para mostrar
-    if (uniqueErrors.length === 0) {
-      console.warn('No hay errores para mostrar!');
-      return;
-    }
-
-    const alertId = showAlert({
-      title: 'Error de Validación',
-      html: (
-        <div className="w-full">
-          <style>{`
-            .error-item {
-              padding: 10px 14px;
-              background: rgba(239, 68, 68, 0.1);
-              border-left: 3px solid #ef4444;
-              border-radius: 6px;
-              margin-bottom: 10px;
-              color: #fca5a5;
-            }
-            .requirement-item {
-              padding: 10px 14px;
-              background: rgba(34, 197, 94, 0.1);
-              border-left: 3px solid #22c55e;
-              border-radius: 6px;
-              margin-bottom: 10px;
-              color: #86efac;
-            }
-          `}</style>
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-red-400 mb-4 flex items-center gap-2">
-              <span className="text-2xl">❌</span> Errores encontrados:
-            </h3>
-            <div
-              className="space-y-2 text-sm"
-              dangerouslySetInnerHTML={{ __html: errorList }}
-            />
+      const requirementsHtml = requirements.map(req => {
+        const met = req.regex.test(currentPassword);
+        return `
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 10px; background: ${met ? 'rgba(0, 255, 133, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border-radius: 6px; border-left: 3px solid ${met ? '#00FF85' : '#EF4444'};">
+            <span style="font-size: 14px; color: #e2e8f0;">${req.text}</span>
+            <span style="font-weight: bold; color: ${met ? '#00FF85' : '#EF4444'};">${met ? '✓' : '✗'}</span>
           </div>
-          <div className="border-t border-gray-700 pt-6">
-            <h3 className="text-lg font-semibold text-green-400 mb-4 flex items-center gap-2">
-              <span className="text-2xl">✓</span> Requisitos que debe cumplir:
-            </h3>
-            <div
-              className="space-y-2 text-sm"
-              dangerouslySetInnerHTML={{ __html: requirementsList }}
-            />
-          </div>
+        `;
+      }).join('');
+
+      htmlContent = `
+        <div style="text-align: left; margin-bottom: 15px;">
+          <h4 style="color: #ef4444; font-weight: bold; margin-bottom: 15px; font-size: 16px;">Requisitos de seguridad:</h4>
+          ${requirementsHtml}
         </div>
-      ),
-      type: 'error',
-      theme: 'code'
-    });
+      `;
+    } else {
+      htmlContent = `
+        <div style="text-align: left; color: #ef4444;">
+          <ul style="list-style-type: disc; padding-left: 20px;">
+            ${errorMessages.map(msg => `<li style="margin-bottom: 5px;">${msg}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
 
-    console.log('Alert ID:', alertId);
-    console.log('Modal debería estar visible ahora');
+    MySwal.fire({
+      title: isPasswordError ? 'Contraseña Débil' : 'Validación Fallida',
+      html: htmlContent,
+      icon: 'error',
+      ...swalDarkTheme
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
-    console.log('Intento de registro:', {
-      ...formData,
-      password: '***',
-      confirmPassword: '***',
-      userType
-    });
-
-    if (formData.password !== formData.confirmPassword) {
-      showAlert({
-        title: 'Error',
-        text: 'Las contraseñas no coinciden',
-        type: 'error'
-      });
+    if (formData.password !== formData.password_confirmation) {
+      showValidationErrors("Las contraseñas no coinciden");
       return;
     }
 
-    if (!userType) {
-      showAlert({
-        title: 'Tipo de usuario requerido',
-        text: 'Por favor selecciona si eres programador o empresa',
-        type: 'warning'
-      });
-      return;
-    }
-
-    // Validación de email con un solo punto después del "@"
-    if (!EMAIL_SINGLE_DOT_REGEX.test(formData.email)) {
-      showAlert({
-        title: 'Email inválido',
-        text: 'El correo debe tener un formato válido (ej. usuario@dominio.com) y solo un punto después del @',
-        type: 'warning'
-      });
-      return;
-    }
-
-    // Validación de contraseña sin espacios
-    if (!PASSWORD_NO_SPACE_REGEX.test(formData.password)) {
-      showAlert({
-        title: 'Contraseña inválida',
-        text: 'La contraseña no puede contener espacios',
-        type: 'warning'
-      });
-      return;
-    }
-
-    // Validación específica según el tipo de usuario
-    if (userType === USER_TYPES.PROGRAMMER) {
-      if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-        showAlert({
-          title: 'Campos requeridos',
-          text: 'Por favor, completa todos los campos',
-          type: 'warning'
-        });
+    if (!isPasswordStrong(formData.password)) {
+        showValidationErrors("La contraseña no cumple con los requisitos de seguridad.");
         return;
-      }
-    } else if (userType === USER_TYPES.COMPANY) {
-      if (!formData.firstName || !formData.companyName || !formData.position || !formData.email || !formData.password) {
-        showAlert({
-          title: 'Campos requeridos',
-          text: 'Por favor, completa todos los campos',
-          type: 'warning'
-        });
-        return;
-      }
     }
 
     setIsLoading(true);
 
     try {
-      // Usamos authService directamente para evitar el auto-login del Context
-      const response = await authService.register({
-        name: formData.firstName,
-        lastname: userType === USER_TYPES.PROGRAMMER ? formData.lastName : undefined,
-        email: formData.email,
-        password: formData.password,
-        password_confirmation: formData.confirmPassword,
-        user_type: userType,
-        company_name: userType === USER_TYPES.COMPANY ? formData.companyName : undefined,
-        position: userType === USER_TYPES.COMPANY ? formData.position : undefined,
-      });
-
+      const response = await authService.register(formData);
       if (response.success) {
-        showAlert({
-          title: '¡Cuenta creada!',
-          text: `Registro exitoso. Por favor inicia sesión con tus credenciales.`,
-          type: 'success',
-          timer: 2000
+        MySwal.fire({
+          title: '¡Registro Exitoso!',
+          text: 'Tu cuenta ha sido creada correctamente. Ahora puedes iniciar sesión.',
+          icon: 'success',
+          ...swalDarkTheme
         });
 
-        if (onNavigate) {
-          setTimeout(() => onNavigate('/login'), 2000);
-        }
+        setTimeout(() => {
+          if (onNavigate) onNavigate('login');
+        }, 2000);
       } else {
-        // Si hay errores de validación, mostrarlos en el modal detallado
-        console.log('Response recibida:', response);
-        console.log('Errores:', response.errors);
-
-        if (response.errors && Object.keys(response.errors).length > 0) {
+        if (response.errors) {
           showValidationErrors(response.errors);
         } else {
-          showAlert({
-            title: 'Error en el registro',
-            text: response.message || 'No se pudo crear la cuenta',
-            type: 'error'
-          });
+          setError(response.message || "Error en el registro.");
+          showValidationErrors(response.message || "Error en el registro.");
         }
       }
-    } catch (error: any) {
-      // Capturar errores de validación que puedan venir en el error
-      console.error('Error en registro:', error);
-
-      // Si el error tiene errores de validación, mostrarlos
-      if (error?.errors && Object.keys(error.errors).length > 0) {
-        showValidationErrors(error.errors);
-      } else if (error?.response?.data?.errors && Object.keys(error.response.data.errors).length > 0) {
-        showValidationErrors(error.response.data.errors);
-      } else {
-        showAlert({
-          title: 'Error de conexión',
-          text: 'No se pudo conectar con el servidor. Verifica tu conexión.',
-          type: 'error'
-        });
-      }
+    } catch (err: any) {
+      setError("Error de conexión. Inténtalo de nuevo más tarde.");
+      showValidationErrors("Error de conexión. Inténtalo de nuevo más tarde.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSocialRegister = (provider: string) => {
-    if (!userType) {
-      alert("Por favor selecciona si eres programador o empresa primero");
-      return;
-    }
-
-    // Save user_type intended for registration in local storage or cookie if needed
     localStorage.setItem('intended_user_type', userType);
-
     if (provider === "Google") {
       window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
     } else if (provider === "GitHub") {
       window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`;
-    } else {
-      alert(`Registrándose con ${provider} como ${userType}...`);
-      if (onNavigate) {
-        const dashboardPage = userType === USER_TYPES.PROGRAMMER ? 'programmer-dashboard' : 'company-dashboard';
-        onNavigate(dashboardPage);
-      }
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="absolute inset-0 code-pattern opacity-5"></div>
+    <div className="min-h-screen bg-[#020617] text-slate-200 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      
+      {/* Ambient background glows */}
+      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#00FF85]/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none z-0"></div>
+      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none z-0"></div>
 
-      <div className="relative max-w-lg w-full space-y-8">
-        {/* Header */}
+      <div className="max-w-2xl w-full space-y-8 relative z-10">
         <div className="text-center">
           <div className="flex justify-center mb-6">
-            <div className="bg-primary p-3 rounded-xl">
-              <Code className="h-8 w-8 text-primary-foreground" />
+            <div className="relative">
+              <div className="absolute -inset-4 bg-[#00FF85]/20 rounded-full blur-xl animate-pulse"></div>
+              <div className="bg-slate-900 border border-[#00FF85]/30 p-4 rounded-xl relative z-10 shadow-[0_0_15px_rgba(0,255,133,0.2)]">
+                <Code2 className="h-10 w-10 text-[#00FF85]" />
+              </div>
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Únete a Programmers</h1>
-          <p className="text-muted-foreground">Crea tu cuenta y empieza a construir tu futuro</p>
+          <h2 className="mt-2 text-3xl font-bold text-white tracking-tight">
+            Únete a
+          </h2>
+          <div className="mt-2 text-3xl font-bold mb-4">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00FF85] to-emerald-400 glow-text drop-shadow-[0_0_15px_rgba(0,255,133,0.3)] hover:drop-shadow-[0_0_25px_rgba(0,255,133,0.5)] transition-all duration-300">
+              Programmers
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-slate-400 font-medium">
+            ¿Ya tienes una cuenta?{" "}
+            <button
+              onClick={() => onNavigate && onNavigate("login")}
+              className="mt-2 inline-flex items-center text-[#00FF85] hover:text-emerald-400 transition-colors font-semibold group"
+            >
+              Inicia sesión aquí
+              <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </p>
         </div>
 
-        {/* User Type Selection */}
-        <UserTypeSelector userType={userType} onUserTypeSelect={setUserType} />
-
-        {/* Registration Form */}
-        {userType && (
-          <Card className="bg-card border-border hover-neon">
-            <CardHeader>
-              <CardTitle className="text-xl text-foreground text-center">
-                Crear Cuenta {userType === USER_TYPES.PROGRAMMER ? 'de Programador' : 'de Empresa'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+        <Card className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 shadow-2xl overflow-hidden hover:border-[#00FF85]/20 transition-all duration-500">
+          <CardHeader className="border-b border-slate-800/50 pb-6">
+            <CardTitle className="text-2xl font-bold text-white text-center">
+              Crear Cuenta
+            </CardTitle>
+            <CardDescription className="text-slate-400 text-center">
+              Selecciona tu tipo de perfil y completa tus datos
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-8 space-y-8 text-center">
+            
+            {/* Social Auth Section */}
+            <div className="px-4">
               <SocialAuthButtons onSocialAuth={handleSocialRegister} isRegister />
-
-              <div className="relative">
-                <Separator className="bg-border" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="bg-card px-3 text-muted-foreground text-sm">o</span>
+              
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator className="w-full bg-slate-800" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-[#020617]/50 backdrop-blur-md px-4 py-1 rounded-full text-slate-500 font-semibold border border-slate-800/50">
+                    O con email
+                  </span>
                 </div>
               </div>
+            </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {userType === USER_TYPES.PROGRAMMER ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-foreground mb-2">Nombre</label>
-                      <Input
-                        type="text"
-                        placeholder="Carlos"
-                        value={formData.firstName}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setFormData({ ...formData, firstName: value });
-                          if (!value) {
-                            setFirstNameError("");
-                          } else if (!NAME_REGEX.test(value)) {
-                            setFirstNameError('Solo letras, números, puntos y guiones.');
-                          } else {
-                            setFirstNameError("");
-                          }
-                        }}
-                        required
-                        aria-invalid={!!firstNameError}
-                        className={`bg-background ${firstNameError ? 'border-destructive focus:border-destructive' : 'border-border focus:border-primary'} text-foreground placeholder:text-muted-foreground`}
-                      />
-                      {firstNameError && (
-                        <p className="mt-2 text-xs text-red-400">{firstNameError}</p>
-                      )}
+            {/* Quick Type Switcher */}
+            <div className="flex justify-center p-1 bg-slate-950/50 border border-slate-800 rounded-lg max-w-sm mx-auto">
+              <button
+                onClick={() => handleUserTypeSelect("programmer")}
+                className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md transition-all ${userType === "programmer" ? 'bg-[#00FF85] text-slate-950 font-bold shadow-[0_0_10px_rgba(0,255,133,0.3)]' : 'text-slate-400 hover:text-white'}`}
+              >
+                <Code2 className="h-4 w-4 mr-2" />
+                Programador
+              </button>
+              <button
+                onClick={() => handleUserTypeSelect("company")}
+                className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md transition-all ${userType === "company" ? 'bg-[#00FF85] text-slate-950 font-bold shadow-[0_0_10px_rgba(0,255,133,0.3)]' : 'text-slate-400 hover:text-white'}`}
+              >
+                <Building2 className="h-4 w-4 mr-2" />
+                Empresa
+              </button>
+            </div>
+
+            {error && (
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start text-red-400 text-sm shadow-[inset_0_0_10px_rgba(239,68,68,0.05)] text-left">
+                <AlertCircle className="h-5 w-5 mr-3 flex-shrink-0 mt-0.5" />
+                <p>{error}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6 text-left">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {userType === "programmer" ? (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium text-slate-300 ml-1">Nombre</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <User className="h-5 w-5 text-slate-500 group-focus-within:text-[#00FF85] transition-colors" />
+                        </div>
+                        <Input
+                          name="name"
+                          required
+                          value={formData.name}
+                          onChange={handleChange}
+                          className="pl-10 h-12 bg-slate-900/50 border-slate-700 text-white placeholder-slate-500 focus:border-[#00FF85] focus:ring-1 focus:ring-[#00FF85]/50 transition-all"
+                          placeholder="Juan"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-foreground mb-2">Apellido</label>
-                      <Input
-                        type="text"
-                        placeholder="Mendoza"
-                        value={formData.lastName}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setFormData({ ...formData, lastName: value });
-                          if (!value) {
-                            setLastNameError("");
-                          } else if (!NAME_REGEX.test(value)) {
-                            setLastNameError('Solo letras, números, puntos y guiones.');
-                          } else {
-                            setLastNameError("");
-                          }
-                        }}
-                        required
-                        aria-invalid={!!lastNameError}
-                        className={`bg-background ${lastNameError ? 'border-destructive focus:border-destructive' : 'border-border focus:border-primary'} text-foreground placeholder:text-muted-foreground`}
-                      />
-                      {lastNameError && (
-                        <p className="mt-2 text-xs text-red-400">{lastNameError}</p>
-                      )}
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium text-slate-300 ml-1">Apellido</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <User className="h-5 w-5 text-slate-500 group-focus-within:text-[#00FF85] transition-colors" />
+                        </div>
+                        <Input
+                          name="lastname"
+                          required
+                          value={formData.lastname}
+                          onChange={handleChange}
+                          className="pl-10 h-12 bg-slate-900/50 border-slate-700 text-white placeholder-slate-500 focus:border-[#00FF85] focus:ring-1 focus:ring-[#00FF85]/50 transition-all"
+                          placeholder="Pérez"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </>
                 ) : (
                   <>
-                    <div>
-                      <label className="block text-foreground mb-2">Nombre de la Empresa</label>
-                      <Input
-                        type="text"
-                        placeholder="TechCorp SA"
-                        value={formData.companyName}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setFormData({ ...formData, companyName: value });
-                          if (!value) {
-                            setCompanyNameError("");
-                          } else if (!NAME_REGEX.test(value)) {
-                            setCompanyNameError('Solo letras, números, puntos y guiones.');
-                          } else {
-                            setCompanyNameError("");
-                          }
-                        }}
-                        required
-                        aria-invalid={!!companyNameError}
-                        className={`bg-background ${companyNameError ? 'border-destructive focus:border-destructive bg-gradient-to-r from-destructive/10 to-destructive/5' : 'border-border focus:border-primary'} text-foreground placeholder:text-muted-foreground`}
-                      />
-                      {companyNameError && (
-                        <p className="mt-2 text-xs text-red-400">{companyNameError}</p>
-                      )}
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-sm font-medium text-slate-300 ml-1">Nombre de la Empresa</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Building2 className="h-5 w-5 text-slate-500 group-focus-within:text-[#00FF85] transition-colors" />
+                        </div>
+                        <Input
+                          name="company_name"
+                          required
+                          value={formData.company_name}
+                          onChange={handleChange}
+                          className="pl-10 h-12 bg-slate-900/50 border-slate-700 text-white placeholder-slate-500 focus:border-[#00FF85] focus:ring-1 focus:ring-[#00FF85]/50 transition-all"
+                          placeholder="TechSolutions Inc."
+                        />
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-foreground mb-2">Tu Nombre</label>
-                        <Input
-                          type="text"
-                          placeholder="Ana"
-                          value={formData.firstName}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setFormData({ ...formData, firstName: value });
-                            if (!value) {
-                              setFirstNameError("");
-                            } else if (!NAME_REGEX.test(value)) {
-                              setFirstNameError('Solo letras, números, puntos y guiones.');
-                            } else {
-                              setFirstNameError("");
-                            }
-                          }}
-                          required
-                          aria-invalid={!!firstNameError}
-                          className={`bg-background ${firstNameError ? 'border-destructive focus:border-destructive' : 'border-border focus:border-primary'} text-foreground placeholder:text-muted-foreground`}
-                        />
-                        {firstNameError && (
-                          <p className="mt-2 text-xs text-red-400">{firstNameError}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-foreground mb-2">Cargo</label>
-                        <Input
-                          type="text"
-                          placeholder="CTO"
-                          value={formData.position}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setFormData({ ...formData, position: value });
-                            if (!value) {
-                              setPositionError("");
-                            } else if (!NAME_REGEX.test(value)) {
-                              setPositionError('Solo letras, números, puntos y guiones.');
-                            } else {
-                              setPositionError("");
-                            }
-                          }}
-                          required
-                          aria-invalid={!!positionError}
-                          className={`bg-background ${positionError ? 'border-destructive focus:border-destructive bg-gradient-to-r from-destructive/10 to-destructive/5' : 'border-border focus:border-primary'} text-foreground placeholder:text-muted-foreground`}
-                        />
-                        {positionError && (
-                          <p className="mt-2 text-xs text-red-400">{positionError}</p>
-                        )}
-                      </div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium text-slate-300 ml-1">Tu Nombre</label>
+                      <Input
+                        name="name"
+                        required
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="h-12 bg-slate-900/50 border-slate-700 text-white focus:border-[#00FF85] transition-all"
+                        placeholder="Ana"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium text-slate-300 ml-1">Cargo</label>
+                      <Input
+                        name="position"
+                        required
+                        value={formData.position}
+                        onChange={handleChange}
+                        className="h-12 bg-slate-900/50 border-slate-700 text-white focus:border-[#00FF85] transition-all"
+                        placeholder="CTO"
+                      />
                     </div>
                   </>
                 )}
 
-                <div>
-                  <label className="block text-foreground mb-2">Email</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-sm font-medium text-slate-300 ml-1">Correo Electrónico</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Mail className="h-5 w-5 text-slate-500 group-focus-within:text-[#00FF85] transition-colors" />
+                    </div>
                     <Input
+                      name="email"
                       type="email"
-                      placeholder="tu@email.com"
-                      value={formData.email}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        if (/\s/.test(raw)) {
-                          const noSpaces = raw.replace(/\s+/g, '');
-                          setFormData({ ...formData, email: noSpaces });
-                          setEmailError('El correo no debe contener espacios.');
-                          return;
-                        }
-                        const value = raw;
-                        setFormData({ ...formData, email: value });
-                        if (!value) {
-                          setEmailError("");
-                        } else if (!EMAIL_SINGLE_DOT_REGEX.test(value)) {
-                          setEmailError('Formato: usuario@dominio.tld (un solo punto tras "@")');
-                        } else {
-                          setEmailError("");
-                        }
-                      }}
-                      onKeyDown={(e) => { if (e.key === ' ') { e.preventDefault(); } }}
                       required
-                      aria-invalid={!!emailError}
-                      className={`pl-10 bg-background ${emailError ? 'border-destructive focus:border-destructive bg-gradient-to-r from-destructive/10 to-destructive/5' : 'border-border focus:border-primary'} text-foreground placeholder:text-muted-foreground`}
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="pl-10 h-12 bg-slate-900/50 border-slate-700 text-white placeholder-slate-500 focus:border-[#00FF85] focus:ring-1 focus:ring-[#00FF85]/50 transition-all"
+                      placeholder="tu@email.com"
                     />
                   </div>
-                  {emailError && (
-                    <p className="mt-2 text-xs text-red-400">{emailError}</p>
-                  )}
                 </div>
 
-                <div>
-                  <label className="block text-foreground mb-2">Contraseña</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-slate-300 ml-1">Contraseña</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-slate-500 group-focus-within:text-[#00FF85] transition-colors" />
+                    </div>
                     <Input
+                      name="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Mínimo 8 caracteres"
-                      value={formData.password}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setFormData({ ...formData, password: value });
-                        if (!value) {
-                          setPasswordError("");
-                        } else if (!PASSWORD_NO_SPACE_REGEX.test(value)) {
-                          setPasswordError('La contraseña no debe contener espacios.');
-                        } else {
-                          setPasswordError("");
-                        }
-                      }}
                       required
-                      minLength={8}
-                      maxLength={64}
-                      aria-invalid={!!passwordError}
-                      className={`pl-10 pr-10 bg-background ${passwordError ? 'border-destructive focus:border-destructive bg-gradient-to-r from-destructive/10 to-destructive/5' : 'border-border focus:border-primary'} text-foreground placeholder:text-muted-foreground`}
+                      value={formData.password}
+                      onChange={handleChange}
+                      onFocus={() => setShowPasswordReqs(true)}
+                      onBlur={() => setShowPasswordReqs(false)}
+                      className={`pl-10 pr-10 h-12 bg-slate-900/50 text-white transition-all ${
+                        formData.password 
+                          ? isPasswordStrong(formData.password)
+                            ? 'border-[#00FF85] focus:ring-[#00FF85]/30'
+                            : 'border-red-500/50 focus:ring-red-500/30 ring-1 ring-red-500/50'
+                          : 'border-slate-700 focus:border-[#00FF85]'
+                      }`}
+                      placeholder="••••••••"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-white transition-colors"
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
                 </div>
-                {passwordError && (
-                  <p className="mt-2 text-xs text-red-400">{passwordError}</p>
-                )}
 
-                <div>
-                  <label className="block text-foreground mb-2">Confirmar Contraseña</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-slate-300 ml-1">Confirmar</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-slate-500 group-focus-within:text-[#00FF85] transition-colors" />
+                    </div>
                     <Input
+                      name="password_confirmation"
                       type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Repite tu contraseña"
-                      value={formData.confirmPassword}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setFormData({ ...formData, confirmPassword: value });
-                        if (!value) {
-                          setConfirmPasswordError("");
-                        } else if (!PASSWORD_NO_SPACE_REGEX.test(value)) {
-                          setConfirmPasswordError('La confirmación no debe contener espacios.');
-                        } else if (value !== formData.password) {
-                          setConfirmPasswordError('Las contraseñas deben coincidir.');
-                        } else {
-                          setConfirmPasswordError("");
-                        }
-                      }}
                       required
-                      maxLength={64}
-                      aria-invalid={!!confirmPasswordError}
-                      className={`pl-10 pr-10 bg-background ${confirmPasswordError ? 'border-destructive focus:border-destructive bg-gradient-to-r from-destructive/10 to-destructive/5' : 'border-border focus:border-primary'} text-foreground placeholder:text-muted-foreground`}
+                      value={formData.password_confirmation}
+                      onChange={handleChange}
+                      className={`pl-10 pr-10 h-12 bg-slate-900/50 text-white transition-all ${
+                        formData.password_confirmation
+                          ? formData.password === formData.password_confirmation
+                            ? 'border-[#00FF85] focus:ring-[#00FF85]/30'
+                            : 'border-red-500/50 focus:ring-red-500/30'
+                          : 'border-slate-700 focus:border-[#00FF85]'
+                      }`}
+                      placeholder="••••••••"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-white transition-colors"
                     >
                       {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
-                  {confirmPasswordError && (
-                    <p className="mt-2 text-xs text-red-400">{confirmPasswordError}</p>
-                  )}
                 </div>
+              </div>
 
-                <div className="flex items-start space-x-3">
-                  <input
-                    type="checkbox"
-                    required
-                    checked={acceptedTerms}
-                    onChange={(e) => { setAcceptedTerms(e.target.checked); setTermsTouched(true); }}
-                    onBlur={() => setTermsTouched(true)}
-                    aria-invalid={!acceptedTerms && termsTouched}
-                    className={`mt-1 rounded bg-background text-primary focus:ring-primary ${(!acceptedTerms && termsTouched) ? 'border-destructive focus:border-destructive ring-destructive/30' : 'border-border focus:border-primary'}`}
-                  />
-                  <label className={`text-sm ${(!acceptedTerms && termsTouched) ? 'text-destructive/80' : 'text-muted-foreground'}`}
-                  >
-                    Acepto los <a href="#" className="text-primary hover:text-primary/90">términos y condiciones</a> y la <a href="#" className="text-primary hover:text-primary/90">política de privacidad</a>
-                  </label>
+              {showPasswordReqs && (
+                <div className="mt-4 p-4 bg-slate-900/80 border border-slate-700 rounded-lg shadow-xl animate-in fade-in slide-in-from-top-2">
+                  <p className="text-xs font-semibold text-white mb-2 uppercase tracking-wider">Seguridad:</p>
+                  <ul className="space-y-1.5 text-xs">
+                    <li className={`flex items-center ${/.{8,}/.test(formData.password) ? 'text-[#00FF85]' : 'text-slate-500'}`}>
+                      <span className="mr-2">{/.{8,}/.test(formData.password) ? '✓' : '○'}</span>
+                      8+ caracteres
+                    </li>
+                    <li className={`flex items-center ${/[A-Z]/.test(formData.password) ? 'text-[#00FF85]' : 'text-slate-500'}`}>
+                      <span className="mr-2">{/[A-Z]/.test(formData.password) ? '✓' : '○'}</span>
+                      Mayúscula
+                    </li>
+                    <li className={`flex items-center ${/[a-z]/.test(formData.password) ? 'text-[#00FF85]' : 'text-slate-500'}`}>
+                      <span className="mr-2">{/[a-z]/.test(formData.password) ? '✓' : '○'}</span>
+                      Minúscula
+                    </li>
+                    <li className={`flex items-center ${/[0-9]/.test(formData.password) ? 'text-[#00FF85]' : 'text-slate-500'}`}>
+                      <span className="mr-2">{/[0-9]/.test(formData.password) ? '✓' : '○'}</span>
+                      Número
+                    </li>
+                    <li className={`flex items-center ${/[@$!%*?&._-]/.test(formData.password) ? 'text-[#00FF85]' : 'text-slate-500'}`}>
+                      <span className="mr-2">{/[@$!%*?&._-]/.test(formData.password) ? '✓' : '○'}</span>
+                      Especial
+                    </li>
+                  </ul>
                 </div>
-                {(!acceptedTerms && termsTouched) && (
-                  <p className="mt-1 text-xs text-red-400">Debes aceptar los términos y la política para continuar.</p>
+              )}
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-12 bg-[#00FF85] hover:bg-[#00FF85]/90 text-slate-900 font-bold text-lg mt-6 shadow-[0_0_15px_rgba(0,255,133,0.3)] hover:shadow-[0_0_25px_rgba(0,255,133,0.5)] transition-all cursor-pointer group"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creando...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center">
+                    Registrarse
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </span>
                 )}
-
-                <Button
-                  type="submit"
-                  disabled={
-                    isLoading ||
-                    !!emailError ||
-                    !!firstNameError ||
-                    !!lastNameError ||
-                    !!passwordError ||
-                    !!confirmPasswordError ||
-                    (formData.password !== formData.confirmPassword) ||
-                    !EMAIL_SINGLE_DOT_REGEX.test(formData.email) ||
-                    !PASSWORD_NO_SPACE_REGEX.test(formData.password) ||
-                    !NAME_REGEX.test(formData.firstName) ||
-                    (userType === USER_TYPES.PROGRAMMER && !NAME_REGEX.test(formData.lastName)) ||
-                    (userType === USER_TYPES.COMPANY && (!NAME_REGEX.test(formData.companyName) || !NAME_REGEX.test(formData.position))) ||
-                    (userType === USER_TYPES.COMPANY && (!!companyNameError || !!positionError)) ||
-                    !acceptedTerms
-                  }
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover-neon disabled:opacity-50"
-                >
-                  {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
-                  {!isLoading && <ArrowRight className="h-5 w-5 ml-2" />}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Login Link */}
-        <div className="text-center">
-          <p className="text-muted-foreground">
-            ¿Ya tienes cuenta?{" "}
-            <button
-              onClick={() => onNavigate && onNavigate('login')}
-              className="text-primary hover:text-primary/90 font-semibold transition-colors"
-            >
-              Inicia sesión
-            </button>
-          </p>
-        </div>
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
         {/* Demo Accounts Info */}
-        <Card className="bg-card border-border border-dashed">
+        <Card className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 border-dashed">
           <CardContent className="p-4">
-            <h3 className="text-foreground font-semibold mb-3 text-center">Cuentas Demo</h3>
+            <h3 className="text-white font-semibold mb-3 text-center">Cuentas Demo</h3>
             <div className="space-y-2 text-sm">
               {DEMO_ACCOUNTS.map((account, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <span className="text-muted-foreground">{account.label}:</span>
-                  <code className="text-primary bg-background px-2 py-1 rounded">
-                    {account.email || account.password}
+                <div key={index} className="flex justify-between items-center text-slate-400">
+                  <span>{account.label}:</span>
+                  <code className="text-[#00FF85] bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">
+                    {account.value}
                   </code>
                 </div>
               ))}
@@ -687,8 +522,6 @@ export function RegisterPage({ onNavigate }: RegisterPageProps) {
           </CardContent>
         </Card>
       </div>
-
-      <Alert />
     </div>
   );
 }

@@ -70,7 +70,7 @@ export function WalletPaymentMethods({ userType }: WalletPaymentMethodsProps) {
                 await addPaymentMethod({ 
                 type, 
                 details: detailsJson, 
-                is_default: !!methods.length === 0 
+                is_default: methods.length === 0 
             });
                 showAlert({ title: 'Éxito', text: 'Método agregado correctamente.', type: 'success' });
             }

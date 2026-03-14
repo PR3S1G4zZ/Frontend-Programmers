@@ -26,6 +26,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (user?.preferences) {
             setThemeState((user.preferences.theme as Theme) || 'dark');
             setAccentColorState(user.preferences.accent_color || '#00FF85');
+        } else if (user === null) {
+            // Unauthenticated state: Force reset to default tech brand colors
+            setThemeState('dark');
+            setAccentColorState('#00FF85');
+            localStorage.removeItem('theme'); // Clean local overrides for guest users
+            localStorage.removeItem('accent_color');
         } else {
             const savedTheme = localStorage.getItem('theme') as Theme;
             const savedColor = localStorage.getItem('accent_color');

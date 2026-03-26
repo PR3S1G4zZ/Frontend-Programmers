@@ -21,6 +21,7 @@ export type ChatMessage = {
   type: 'text' | 'image' | 'file';
   fileName?: string;
   fileSize?: string;
+  fileUrl?: string;
   isRead: boolean;
 };
 
@@ -36,5 +37,16 @@ export async function sendConversationMessage(conversationId: number, content: s
   return apiRequest<{ success: boolean; data: ChatMessage }>(`/conversations/${conversationId}/messages`, {
     method: 'POST',
     body: JSON.stringify({ content }),
+  });
+}
+
+export async function sendConversationFile(conversationId: number, file: File, content?: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (content) formData.append('content', content);
+
+  return apiRequest<{ success: boolean; data: ChatMessage }>(`/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    body: formData,
   });
 }

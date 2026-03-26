@@ -173,7 +173,7 @@ class AuthService {
   }
 
   // Establecer token
-  private setToken(token: string): void {
+  public setToken(token: string): void {
     this.token = token;
     localStorage.setItem('auth_token', token);
   }
@@ -197,6 +197,12 @@ class AuthService {
   // Guardar usuario en localStorage
   setStoredUser(user: User): void {
     localStorage.setItem('user_data', JSON.stringify(user));
+  }
+
+  // Handle external login (OAuth callbacks)
+  handleExternalLogin(token: string, user: User): void {
+    this.setToken(token);
+    this.setStoredUser(user);
   }
 
   // Limpiar datos del usuario

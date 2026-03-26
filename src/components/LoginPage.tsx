@@ -166,7 +166,7 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
                   <label className="text-sm font-medium text-slate-300">
                     Contraseña
                   </label>
-                  <button type="button" className="text-xs font-medium text-[#00FF85] hover:text-emerald-400 hover:underline transition-colors">
+                  <button type="button" onClick={() => onNavigate?.('forgot-password')} className="text-xs font-medium text-[#00FF85] hover:text-emerald-400 hover:underline transition-colors">
                     ¿Olvidaste tu contraseña?
                   </button>
                 </div>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingIndicator } from "./PageTransition";
+import { authService, type User } from "../services/authService";
 
 interface AuthCallbackPageProps {
     onNavigate: (page: string) => void;
@@ -27,28 +28,14 @@ export function AuthCallbackPage({ onNavigate }: AuthCallbackPageProps) {
         }
 
         if (token && userType && name) {
-            // Store token locally
-            // Note: We use the service's private method if possible, or just set it manually via public method if exposes one?
-            // authService.setToken is private in the code view I saw earlier? 
-            // Wait, let me check authService.ts content again.
-            // Line 174: private setToken(token: string)
-            // Ah, it is private. I cannot call it directly.
-            // However, `login` calls it.
-
-            // I should probably expose a public method `handleExternalLogin(token, user)` or similar in AuthService.
-            // OR, since this is JavaScript/Typescript, I can just use localStorage directly and force a reload or use refreshUser.
-
-            localStorage.setItem('auth_token', token);
-
-            // Also set temp user data
-            const tempData = {
+            const tempUser: User = {
                 id: 0,
                 name,
                 email: "",
                 lastname: "",
-                user_type: userType as any
+                user_type: userType as 'programmer' | 'company' | 'admin'
             };
-            localStorage.setItem('user_data', JSON.stringify(tempData));
+            authService.handleExternalLogin(token, tempUser);
 
             // Refresh via context to pick up the new token
             refreshUser().then(() => {

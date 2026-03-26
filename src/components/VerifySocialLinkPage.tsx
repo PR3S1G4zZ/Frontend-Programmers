@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingIndicator } from "./PageTransition";
+import { authService, type User } from "../services/authService";
 
 interface VerifySocialLinkPageProps {
     onNavigate: (page: string) => void;
@@ -36,16 +37,14 @@ export function VerifySocialLinkPage({ onNavigate }: VerifySocialLinkPageProps) 
                 }
 
                 // If successful, log the user in
-                localStorage.setItem('auth_token', data.token);
-
-                const tempData = {
+                const verifiedUser: User = {
                     id: data.user.id,
                     name: data.user.name,
                     email: data.user.email,
                     lastname: "",
                     user_type: data.user.user_type
                 };
-                localStorage.setItem('user_data', JSON.stringify(tempData));
+                authService.handleExternalLogin(data.token, verifiedUser);
 
                 await refreshUser();
 

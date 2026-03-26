@@ -19,6 +19,7 @@ import { ForgotPasswordPage } from './components/ForgotPasswordPage';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { AuthCallbackPage } from './components/AuthCallbackPage';
 import { VerifySocialLinkPage } from './components/VerifySocialLinkPage';
+import { VerifyEmailPage } from './components/VerifyEmailPage';
 
 type PageType =
   | 'home'
@@ -33,7 +34,8 @@ type PageType =
   | 'forgot-password'
   | 'reset-password'
   | 'auth-callback'
-  | 'verify-social-link';
+  | 'verify-social-link'
+  | 'verify-email';
 
 type UserType = 'guest' | 'programmer' | 'company' | 'admin';
 
@@ -85,6 +87,11 @@ function AppContent() {
       setCurrentPage("verify-social-link");
       hasInitialized.current = true;
     }
+
+    if (path === "/verify-email") {
+      setCurrentPage("verify-email");
+      hasInitialized.current = true;
+    }
   }, []);
 
   useEffect(() => {
@@ -100,6 +107,7 @@ function AppContent() {
       'register',
       'forgot-password',
       'reset-password',
+      'verify-email',
     ];
 
     if (user) {
@@ -199,6 +207,8 @@ function AppContent() {
           return <AuthCallbackPage onNavigate={handleNavigate} />;
         case 'verify-social-link':
           return <VerifySocialLinkPage onNavigate={handleNavigate} />;
+        case 'verify-email':
+          return <VerifyEmailPage onNavigate={handleNavigate} />;
         default:
           return <LandingPage onNavigate={handleNavigate} />;
       }

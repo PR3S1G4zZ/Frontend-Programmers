@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "./ui/button";
 import {
   Code,
@@ -12,9 +13,11 @@ import {
   Home,
   X,
   Wallet,
-  BarChart3
+  BarChart3,
+  Bell
 } from "lucide-react";
 import type { User as AuthUser } from "../services/authService";
+import { fetchUnreadCount } from "../services/notificationService";
 
 interface SidebarProps {
   userType: 'programmer' | 'company' | 'admin';
@@ -35,6 +38,23 @@ export function Sidebar({
   onClose,
   user,
 }: SidebarProps) {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const loadUnreadCount = useCallback(async () => {
+    try {
+      const res = await fetchUnreadCount();
+      if (res.success) setUnreadCount(res.unread_count);
+    } catch {
+      // silently fail
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUnreadCount();
+    const interval = setInterval(loadUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [loadUnreadCount]);
+
   const programmerSections = [
     { id: 'welcome', label: 'Mi Espacio', icon: Home },
     { id: 'projects-active', label: 'Proyectos Activos', icon: Code },
@@ -42,6 +62,7 @@ export function Sidebar({
     { id: 'projects', label: 'Proyectos Publicados', icon: Search },
     { id: 'profile', label: 'Mi Perfil', icon: User },
     { id: 'chat', label: 'Chat', icon: MessageSquare },
+    { id: 'notifications', label: 'Notificaciones', icon: Bell, badge: unreadCount },
     { id: 'wallet', label: 'Billetera & Cobros', icon: Wallet },
     { id: 'settings', label: 'Configuración', icon: Settings }
   ];
@@ -52,6 +73,7 @@ export function Sidebar({
     { id: 'publish-project', label: 'Publicar Proyecto', icon: Plus },
     { id: 'search-programmers', label: 'Buscar Programadores', icon: Search },
     { id: 'chat', label: 'Chat', icon: MessageSquare },
+    { id: 'notifications', label: 'Notificaciones', icon: Bell, badge: unreadCount },
     { id: 'wallet', label: 'Billetera & Pagos', icon: Wallet },
     { id: 'settings', label: 'Configuración', icon: Settings }
   ];
@@ -141,6 +163,7 @@ export function Sidebar({
           <div className="space-y-2">
             {sections.map((section) => {
               const Icon = section.icon;
+              const badge = (section as any).badge;
               return (
                 <Button
                   key={section.id}
@@ -153,6 +176,11 @@ export function Sidebar({
                 >
                   <Icon className="h-5 w-5 mr-3" />
                   {section.label}
+                  {badge > 0 && (
+                    <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                      {badge > 99 ? '99+' : badge}
+                    </span>
+                  )}
                 </Button>
               );
             })}

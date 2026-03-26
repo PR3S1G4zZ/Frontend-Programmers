@@ -21,6 +21,7 @@ import type { ProjectResponse } from '../services/projectService';
 import { WalletPaymentMethods } from './dashboard/wallet/WalletPaymentMethods';
 import { Workspace } from './dashboard/shared/Workspace';
 import { AppearanceSection } from './dashboard/settings/AppearanceSection';
+import { NotificationSection } from './dashboard/shared/NotificationSection';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Settings as SettingsIcon } from 'lucide-react';
 
@@ -149,7 +150,7 @@ export function CompanyDashboard({ onLogout }: CompanyDashboardProps) {
           </div>
         );
       case 'notifications':
-        return <div className="text-white p-8">Notificaciones (Próximamente)</div>;
+        return <NotificationSection />;
       case 'settings':
         return (
           <div className="p-8 space-y-6">

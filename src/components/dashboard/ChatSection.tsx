@@ -4,7 +4,7 @@ import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { ScrollArea } from '../ui/scroll-area';
-import { Search, Send, MoreVertical, ArrowLeft, MessageSquare } from 'lucide-react';
+import { Search, Send, MoreVertical, ArrowLeft, MessageSquare, Paperclip, Download } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
-import { fetchConversationMessages, fetchConversations, sendConversationMessage } from '../../services/chatService';
+import { fetchConversationMessages, fetchConversations, sendConversationMessage, sendConversationFile } from '../../services/chatService';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface Contact {
@@ -38,6 +38,7 @@ interface Message {
   type: 'text' | 'image' | 'file';
   fileName?: string;
   fileSize?: string;
+  fileUrl?: string;
   isRead: boolean;
 }
 
@@ -52,9 +53,11 @@ export function ChatSection({ userType, initialChatId }: ChatSectionProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isMobileView, setIsMobileView] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const currentUserId = user ? String(user.id) : 'me';
 
@@ -124,6 +127,7 @@ export function ChatSection({ userType, initialChatId }: ChatSectionProps) {
           type: message.type,
           fileName: message.fileName,
           fileSize: message.fileSize,
+          fileUrl: message.fileUrl,
           isRead: message.isRead,
         }));
 
@@ -185,11 +189,51 @@ export function ChatSection({ userType, initialChatId }: ChatSectionProps) {
           content: sentMessage.content,
           timestamp: formatTimestamp(sentMessage.timestamp),
           type: sentMessage.type,
+          fileUrl: sentMessage.fileUrl,
+          fileName: sentMessage.fileName,
+          fileSize: sentMessage.fileSize,
           isRead: sentMessage.isRead,
         },
       ]);
     } catch (error) {
       console.error('Error enviando mensaje', error);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedContact) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('El archivo no puede superar los 10MB');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const response = await sendConversationFile(Number(selectedContact), file);
+      const sentMessage = response?.data;
+      if (sentMessage) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: String(sentMessage.id),
+            senderId: sentMessage.senderId,
+            content: sentMessage.content,
+            timestamp: formatTimestamp(sentMessage.timestamp),
+            type: sentMessage.type,
+            fileUrl: sentMessage.fileUrl,
+            fileName: sentMessage.fileName,
+            fileSize: sentMessage.fileSize,
+            isRead: sentMessage.isRead,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error enviando archivo', error);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -361,15 +405,42 @@ export function ChatSection({ userType, initialChatId }: ChatSectionProps) {
                                 ? 'bg-primary text-primary-foreground rounded-2xl rounded-tr-sm'
                                 : 'bg-[#1E1E1E] text-gray-100 rounded-2xl rounded-tl-sm border border-[#2A2A2A]'
                                 }`}>
-                                {message.type === 'image' && (
+                                {message.type === 'image' && message.fileUrl && (
                                   <div className="mb-2 rounded-lg overflow-hidden border border-black/10">
-                                    <div className="bg-black/20 h-48 w-64 flex items-center justify-center">
-                                      <MessageSquare className="h-8 w-8 opacity-50" />
-                                    </div>
+                                    <img
+                                      src={message.fileUrl}
+                                      alt={message.fileName || 'Imagen'}
+                                      className="max-w-full max-h-64 object-contain cursor-pointer"
+                                      onClick={() => window.open(message.fileUrl, '_blank')}
+                                    />
                                   </div>
                                 )}
 
-                                <p className="whitespace-pre-wrap">{message.content}</p>
+                                {message.type === 'file' && message.fileUrl && (
+                                  <div className="mb-2 flex items-center gap-3 p-3 rounded-lg bg-black/10 border border-black/10">
+                                    <div className="shrink-0 w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                                      <Download className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium truncate">{message.fileName}</p>
+                                      <p className="text-xs opacity-70">{message.fileSize}</p>
+                                    </div>
+                                    <a
+                                      href={message.fileUrl}
+                                      download={message.fileName}
+                                      className="shrink-0 h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/40 transition-colors"
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </a>
+                                  </div>
+                                )}
+
+                                {message.content && message.type !== 'file' && (
+                                  <p className="whitespace-pre-wrap">{message.content}</p>
+                                )}
+                                {message.type === 'file' && !message.fileUrl && (
+                                  <p className="whitespace-pre-wrap">{message.content}</p>
+                                )}
 
                                 {/* Message Meta & Actions */}
                                 <div className={`absolute -bottom-5 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isMe ? 'right-0' : 'left-0'}`}>
@@ -407,11 +478,29 @@ export function ChatSection({ userType, initialChatId }: ChatSectionProps) {
               <div className="p-4 bg-card border-t border-border">
                 <div className="max-w-4xl mx-auto">
                   <div className="flex items-end gap-2 bg-muted p-2 rounded-2xl border border-border focus-within:border-primary/50 focus-within:bg-accent transition-all shadow-sm">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.txt,.csv"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="shrink-0 h-10 w-10 text-gray-400 hover:text-primary hover:bg-primary/10"
+                      title="Adjuntar archivo"
+                    >
+                      <Paperclip className="h-5 w-5" />
+                    </Button>
+
                     <Input
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyDown={handleKeyPress}
-                      placeholder="Escribe un mensaje..."
+                      placeholder={isUploading ? 'Subiendo archivo...' : 'Escribe un mensaje...'}
                       className="border-0 bg-transparent p-2 h-auto text-sm focus-visible:ring-0 placeholder-gray-500 text-white min-h-[40px] max-h-32 resize-none"
                     />
 

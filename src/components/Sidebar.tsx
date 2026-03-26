@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { User as AuthUser } from "../services/authService";
 import { fetchUnreadCount } from "../services/notificationService";
+import { fetchConversations } from "../services/chatService";
 
 interface SidebarProps {
   userType: 'programmer' | 'company' | 'admin';
@@ -39,6 +40,7 @@ export function Sidebar({
   user,
 }: SidebarProps) {
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
   const loadUnreadCount = useCallback(async () => {
     try {
@@ -49,11 +51,25 @@ export function Sidebar({
     }
   }, []);
 
+  const loadChatUnreadCount = useCallback(async () => {
+    try {
+      const res = await fetchConversations();
+      const total = (res.data || []).reduce((sum: number, c: any) => sum + (c.unreadCount || 0), 0);
+      setChatUnreadCount(total);
+    } catch {
+      // silently fail
+    }
+  }, []);
+
   useEffect(() => {
     loadUnreadCount();
-    const interval = setInterval(loadUnreadCount, 30000);
+    loadChatUnreadCount();
+    const interval = setInterval(() => {
+      loadUnreadCount();
+      loadChatUnreadCount();
+    }, 30000);
     return () => clearInterval(interval);
-  }, [loadUnreadCount]);
+  }, [loadUnreadCount, loadChatUnreadCount]);
 
   const programmerSections = [
     { id: 'welcome', label: 'Mi Espacio', icon: Home },
@@ -61,7 +77,7 @@ export function Sidebar({
     { id: 'portfolio', label: 'Mi Portafolio', icon: FolderOpen },
     { id: 'projects', label: 'Proyectos Publicados', icon: Search },
     { id: 'profile', label: 'Mi Perfil', icon: User },
-    { id: 'chat', label: 'Chat', icon: MessageSquare },
+    { id: 'chat', label: 'Chat', icon: MessageSquare, badge: chatUnreadCount },
     { id: 'notifications', label: 'Notificaciones', icon: Bell, badge: unreadCount },
     { id: 'wallet', label: 'Billetera & Cobros', icon: Wallet },
     { id: 'settings', label: 'Configuración', icon: Settings }
@@ -72,7 +88,7 @@ export function Sidebar({
     { id: 'my-projects', label: 'Mis Proyectos', icon: FolderOpen },
     { id: 'publish-project', label: 'Publicar Proyecto', icon: Plus },
     { id: 'search-programmers', label: 'Buscar Programadores', icon: Search },
-    { id: 'chat', label: 'Chat', icon: MessageSquare },
+    { id: 'chat', label: 'Chat', icon: MessageSquare, badge: chatUnreadCount },
     { id: 'notifications', label: 'Notificaciones', icon: Bell, badge: unreadCount },
     { id: 'wallet', label: 'Billetera & Pagos', icon: Wallet },
     { id: 'settings', label: 'Configuración', icon: Settings }
@@ -97,6 +113,12 @@ export function Sidebar({
 
   const handleSectionChange = (sectionId: string) => {
     onSectionChange(sectionId);
+    if (sectionId === 'notifications') {
+      setUnreadCount(0);
+    }
+    if (sectionId === 'chat') {
+      setChatUnreadCount(0);
+    }
     if (onClose) {
       onClose();
     }

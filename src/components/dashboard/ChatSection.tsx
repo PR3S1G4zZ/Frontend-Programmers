@@ -16,6 +16,28 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchConversationMessages, fetchConversations, sendConversationMessage, sendConversationFile } from '../../services/chatService';
 import { useAuth } from '../../contexts/AuthContext';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+
+const MySwal = withReactContent(Swal);
+
+const ALLOWED_FILE_EXTENSIONS = [
+  'jpg', 'jpeg', 'png', 'gif',
+  'pdf', 'doc', 'docx', 'xls', 'xlsx',
+  'zip', 'rar', 'txt', 'csv'
+];
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
+const ALLOWED_DOC_MIMES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/zip',
+  'application/x-rar-compressed',
+  'text/plain',
+  'text/csv'
+];
 
 interface Contact {
   id: string;
@@ -204,8 +226,36 @@ export function ChatSection({ userType, initialChatId }: ChatSectionProps) {
     const file = e.target.files?.[0];
     if (!file || !selectedContact) return;
 
+    // Validate file type - only photos and documents allowed
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
+    const isValidExtension = ALLOWED_FILE_EXTENSIONS.includes(extension);
+    const isValidMime = [...ALLOWED_FILE_TYPES, ...ALLOWED_DOC_MIMES].includes(file.type);
+
+    if (!isValidExtension && !isValidMime) {
+      MySwal.fire({
+        icon: 'warning',
+        title: 'Archivo no permitido',
+        html: 'Solo se permiten subir <b>fotos</b> (JPG, PNG, GIF) o <b>documentos</b> (PDF, DOC, XLS, ZIP, TXT, CSV).<br><br>No se permiten archivos de código ni ejecutables.',
+        confirmButtonColor: '#00FF85',
+        confirmButtonText: '<span style="color: #020617; font-weight: bold;">Entendido</span>',
+        background: '#0f172a',
+        color: '#f8fafc',
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     if (file.size > 10 * 1024 * 1024) {
-      alert('El archivo no puede superar los 10MB');
+      MySwal.fire({
+        icon: 'error',
+        title: 'Archivo muy grande',
+        text: 'El archivo no puede superar los 10MB.',
+        confirmButtonColor: '#00FF85',
+        confirmButtonText: '<span style="color: #020617; font-weight: bold;">Entendido</span>',
+        background: '#0f172a',
+        color: '#f8fafc',
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
@@ -231,6 +281,15 @@ export function ChatSection({ userType, initialChatId }: ChatSectionProps) {
       }
     } catch (error) {
       console.error('Error enviando archivo', error);
+      MySwal.fire({
+        icon: 'error',
+        title: 'Error al subir',
+        text: 'No se pudo subir el archivo. Inténtalo de nuevo.',
+        confirmButtonColor: '#00FF85',
+        confirmButtonText: '<span style="color: #020617; font-weight: bold;">Entendido</span>',
+        background: '#0f172a',
+        color: '#f8fafc',
+      });
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

@@ -82,11 +82,15 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+    const baseUrl = apiUrl.replace(/\/api\/?$/, '');
+    window.location.href = `${baseUrl}/auth/google`;
   };
 
   const handleGithubLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`;
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+    const baseUrl = apiUrl.replace(/\/api\/?$/, '');
+    window.location.href = `${baseUrl}/auth/github`;
   };
 
   return (

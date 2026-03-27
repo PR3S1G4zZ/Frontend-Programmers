@@ -194,10 +194,12 @@ export function RegisterPage({ onNavigate }: RegisterPageProps) {
 
   const handleSocialRegister = (provider: string) => {
     localStorage.setItem('intended_user_type', userType);
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+    const baseUrl = apiUrl.replace(/\/api\/?$/, '');
     if (provider === "Google") {
-      window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
+      window.location.href = `${baseUrl}/auth/google`;
     } else if (provider === "GitHub") {
-      window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`;
+      window.location.href = `${baseUrl}/auth/github`;
     }
   };
 

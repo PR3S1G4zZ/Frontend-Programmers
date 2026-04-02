@@ -71,12 +71,17 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
         ]);
         if (!isMounted) return;
         // Normalizar skills: la API puede devolver objetos {id, name} en vez de strings
+        const normalizeArray = (val: any): any[] => {
+          if (Array.isArray(val)) return val;
+          if (typeof val === 'string') { try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; } }
+          return [];
+        };
         const normalizedDevs = (devsResponse.data || []).map((dev: any) => ({
           ...dev,
-          skills: (dev.skills || []).map((s: any) =>
+          skills: normalizeArray(dev.skills).map((s: any) =>
             typeof s === 'string' ? s : (s.name ?? String(s))
           ),
-          languages: (dev.languages || []).map((l: any) =>
+          languages: normalizeArray(dev.languages).map((l: any) =>
             typeof l === 'string' ? l : (l.name ?? String(l))
           ),
         }));

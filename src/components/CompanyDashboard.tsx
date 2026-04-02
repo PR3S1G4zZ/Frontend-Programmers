@@ -22,7 +22,11 @@ import { WalletPaymentMethods } from './dashboard/wallet/WalletPaymentMethods';
 import { Workspace } from './dashboard/shared/Workspace';
 
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Settings as SettingsIcon } from 'lucide-react';
+import { Settings as SettingsIcon, User as UserIcon, Shield } from 'lucide-react';
+import { AppearanceSection } from './dashboard/settings/AppearanceSection';
+import { SecuritySettings } from './dashboard/settings/SecuritySettings';
+import { CompanyProfileSettings } from './dashboard/settings/CompanyProfileSettings';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 interface CompanyDashboardProps {
   onLogout?: () => void;
@@ -152,21 +156,47 @@ export function CompanyDashboard({ onLogout }: CompanyDashboardProps) {
           <div className="p-8 space-y-6">
             <h2 className="text-3xl font-bold text-white mb-6">Configuración</h2>
             <div className="max-w-4xl space-y-6">
-              {/* Sección de Apariencia */}
-              <Card className="bg-card border-border hover:border-primary/20 transition-colors">
-                <CardHeader>
-                  <CardTitle className="text-foreground flex items-center">
-                    <SettingsIcon className="h-5 w-5 mr-2" />
-                    Apariencia y UX
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <AppearanceSection />
-                </CardContent>
-              </Card>
+              <Tabs defaultValue="profile" className="space-y-6">
+                <TabsList className="bg-card border border-border p-1">
+                  <TabsTrigger value="profile" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <UserIcon className="h-4 w-4 mr-2" />
+                    Perfil
+                  </TabsTrigger>
+                  <TabsTrigger value="security" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <Shield className="h-4 w-4 mr-2" />
+                    Seguridad
+                  </TabsTrigger>
+                  <TabsTrigger value="appearance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <SettingsIcon className="h-4 w-4 mr-2" />
+                    Apariencia UX
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="profile" className="space-y-6">
+                  <CompanyProfileSettings />
+                </TabsContent>
+
+                <TabsContent value="security" className="space-y-6">
+                  <SecuritySettings />
+                </TabsContent>
+
+                <TabsContent value="appearance" className="space-y-6">
+                  <Card className="bg-card border-border hover:border-primary/20 transition-colors">
+                    <CardHeader>
+                      <CardTitle className="text-foreground flex items-center">
+                        <SettingsIcon className="h-5 w-5 mr-2" />
+                        Apariencia y UX
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <AppearanceSection />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
 
               {/* Nota sobre métodos de pago */}
-              <p className="text-gray-400">La configuración de métodos de pago se ha movido a la sección de Billetera.</p>
+              <p className="text-gray-400 mt-4 text-sm">La configuración de métodos de pago se ha movido a la sección de Billetera.</p>
             </div>
           </div>
         );

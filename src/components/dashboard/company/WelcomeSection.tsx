@@ -74,6 +74,19 @@ export function WelcomeSection({ onSectionChange }: WelcomeSectionProps) {
     ? Math.round((completedProjects / totalWithCompletion.length) * 100)
     : 0;
 
+  // Calculate hired developers from company's projects
+  const hiredDeveloperIds = new Set<number>();
+  projects.forEach(p => {
+    if (Array.isArray(p.applications)) {
+      p.applications.forEach(app => {
+        if (app.status === 'accepted') {
+          hiredDeveloperIds.add(app.developer.id);
+        }
+      });
+    }
+  });
+  const hiredDevelopersCount = hiredDeveloperIds.size;
+
   const metrics = [
     {
       title: 'Proyectos Activos',
@@ -84,7 +97,7 @@ export function WelcomeSection({ onSectionChange }: WelcomeSectionProps) {
     },
     {
       title: 'Desarrolladores Contratados',
-      value: developers.filter(d => d.availability === 'available' || d.availability === 'busy').length.toString(),
+      value: hiredDevelopersCount.toString(),
       change: `${developers.length} perfiles disponibles`,
       icon: Users,
       color: 'bg-primary'

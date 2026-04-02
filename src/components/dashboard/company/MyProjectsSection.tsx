@@ -81,7 +81,7 @@ const mapProject = (project: ProjectResponse): Project => {
   const budget = project.budget_max ?? project.budget_min ?? 0;
   const budgetType = project.budget_type ?? 'fixed';
   const category = project.categories?.[0]?.name ?? 'Sin categoría';
-  const skills = project.skills?.map((skill) => skill.name) ?? [];
+  const skills = Array.isArray(project.skills) ? project.skills.map((skill) => skill.name) : [];
   const acceptedApplications = project.applications?.filter((application: any) => application.developer && application.status === 'accepted');
 
   let progress = 0;

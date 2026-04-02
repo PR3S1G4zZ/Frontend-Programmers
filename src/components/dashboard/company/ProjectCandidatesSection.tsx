@@ -32,7 +32,7 @@ export function ProjectCandidatesSection({ project, onBack }: ProjectCandidatesS
     const loadCandidates = async () => {
         try {
             const response = await fetchProjectApplications(String(project.id));
-            setCandidates(response.data);
+            setCandidates(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Error loading candidates', error);
             showAlert({

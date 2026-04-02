@@ -42,8 +42,8 @@ export function WelcomeSection({ onSectionChange }: WelcomeSectionProps) {
           fetchDevelopers()
         ]);
 
-        setProjects(projectsResponse.data || []);
-        setDevelopers(developersResponse.data || []);
+        setProjects(Array.isArray(projectsResponse.data) ? projectsResponse.data : []);
+        setDevelopers(Array.isArray(developersResponse.data) ? developersResponse.data : []);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
       } finally {

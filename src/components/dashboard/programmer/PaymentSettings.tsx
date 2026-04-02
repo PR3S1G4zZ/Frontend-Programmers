@@ -33,7 +33,8 @@ export function PaymentSettings() {
         try {
             const response = await apiClient.get<PaymentMethod[]>('/payment-methods');
             // @ts-ignore
-            setMethods(response.data || response);
+            const data = response.data || response;
+            setMethods(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error fetching payment methods:', error);
         } finally {

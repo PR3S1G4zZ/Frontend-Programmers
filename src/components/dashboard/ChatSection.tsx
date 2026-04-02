@@ -95,8 +95,8 @@ export function ChatSection({ userType, initialChatId }: ChatSectionProps) {
       try {
         const response = await fetchConversations();
         if (!isMounted) return;
-        const data = response.data || [];
-        const mapped = data.map((contact) => ({
+        const data = Array.isArray(response.data) ? response.data : [];
+        const mapped = data.map((contact: any) => ({
           id: String(contact.id),
           name: contact.name,
           role: contact.role,
@@ -139,9 +139,9 @@ export function ChatSection({ userType, initialChatId }: ChatSectionProps) {
       try {
         const response = await fetchConversationMessages(Number(selectedContact));
         if (!isMounted) return;
-        const data = response?.data || [];
+        const data = Array.isArray(response?.data) ? response.data : [];
 
-        const newMessages = data.map((message) => ({
+        const newMessages = data.map((message: any) => ({
           id: String(message.id),
           senderId: message.senderId,
           content: message.content,

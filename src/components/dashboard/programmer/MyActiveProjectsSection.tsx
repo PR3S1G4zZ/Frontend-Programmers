@@ -26,7 +26,7 @@ export function MyActiveProjectsSection({ onWorkspaceSelect }: MyActiveProjectsS
             const response = await apiClient.get<any>('/projects?my_projects=true');
             // @ts-ignore
             const data = response.data || response;
-            setProjects(data);
+            setProjects(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error(error);
             setError('No se pudieron cargar los proyectos. Por favor, inténtalo de nuevo.');

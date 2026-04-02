@@ -89,7 +89,7 @@ export function Sidebar({
   const loadChatUnreadCount = useCallback(async () => {
     try {
       const res = await fetchConversations();
-      const total = (res.data || []).reduce((sum: number, c: any) => sum + (c.unreadCount || 0), 0);
+      const total = (Array.isArray(res.data) ? res.data : []).reduce((sum: number, c: any) => sum + (c.unreadCount || 0), 0);
       setChatUnreadCount(total);
     } catch {
       // silently fail

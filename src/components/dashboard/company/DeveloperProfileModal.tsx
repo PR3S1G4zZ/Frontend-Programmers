@@ -146,7 +146,7 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                                                 Tecnologías & Herramientas
                                             </h3>
                                             <div className="flex flex-wrap gap-2 sm:gap-3">
-                                                {developer.skills.map(skill => (
+                                                {(Array.isArray(developer.skills) ? developer.skills : []).map(skill => (
                                                     <Badge key={skill} variant="secondary" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#111] text-gray-200 border border-[#333] hover:border-primary/50 transition-colors text-xs sm:text-sm">
                                                         {skill}
                                                     </Badge>

@@ -76,7 +76,7 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
           if (typeof val === 'string') { try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; } }
           return [];
         };
-        const normalizedDevs = (devsResponse.data || []).map((dev: any) => ({
+        const normalizedDevs = (Array.isArray(devsResponse.data) ? devsResponse.data : []).map((dev: any) => ({
           ...dev,
           skills: normalizeArray(dev.skills).map((s: any) =>
             typeof s === 'string' ? s : (s.name ?? String(s))
@@ -87,7 +87,7 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
         }));
         setDevelopers(normalizedDevs);
         // Assuming fetchFavorites returns array of IDs
-        setFavorites(favsResponse || []);
+        setFavorites(Array.isArray(favsResponse) ? favsResponse : Array.isArray(favsResponse?.data) ? favsResponse.data : []);
       } catch (error) {
         console.error('Error cargando datos', error);
         if (isMounted) {

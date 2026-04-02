@@ -72,7 +72,7 @@ interface Project {
 
 const mapProject = (project: ProjectResponse): Project => {
   const category = project.categories?.[0]?.name ?? 'Sin categoría';
-  const skills = project.skills?.map((skill) => skill.name) ?? [];
+  const skills = Array.isArray(project.skills) ? project.skills.map((skill) => skill.name) : [];
   const budgetMin = project.budget_min ?? 0;
   const budgetMax = project.budget_max ?? budgetMin;
 
@@ -278,7 +278,7 @@ export function ProjectsSection() {
       try {
         const response = await fetchProjects();
         if (!isMounted) return;
-        const items = response.data || [];
+        const items = Array.isArray(response.data) ? response.data : [];
         const mappedProjects = items.map(mapProject);
         setProjects(mappedProjects);
         setAppliedProjects(mappedProjects.filter(p => p.hasApplied).map(p => p.id));

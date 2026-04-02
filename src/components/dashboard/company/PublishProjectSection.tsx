@@ -147,7 +147,7 @@ export function PublishProjectSection({ onSectionChange, initialData, isEditing 
         skills: []
       });
 
-      if (initialData.skills) {
+      if (Array.isArray(initialData.skills)) {
         setSkills(initialData.skills.map(s => ({
           id: s.id.toString(),
           name: s.name,
@@ -155,7 +155,7 @@ export function PublishProjectSection({ onSectionChange, initialData, isEditing 
         })));
       }
 
-      if (initialData.tags) {
+      if (Array.isArray(initialData.tags)) {
         setDeliverables(initialData.tags.length > 0 ? initialData.tags : ['']);
       }
     }
@@ -171,8 +171,8 @@ export function PublishProjectSection({ onSectionChange, initialData, isEditing 
           fetchSkills(),
         ]);
         if (!isMounted) return;
-        setCategoryOptions(categoriesResponse.data || []);
-        setSkillOptions(skillsResponse.data || []);
+        setCategoryOptions(Array.isArray(categoriesResponse.data) ? categoriesResponse.data : []);
+        setSkillOptions(Array.isArray(skillsResponse.data) ? skillsResponse.data : []);
       } catch (error) {
         console.error('Error cargando taxonomías', error);
       }

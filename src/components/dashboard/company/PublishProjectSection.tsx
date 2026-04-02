@@ -343,21 +343,28 @@ export function PublishProjectSection({ onSectionChange, initialData, isEditing 
           // Funding Flow
           if (projectId && budgetMin) {
             try {
-              setSubmitMessage('Procesando depósito del 50%...');
-              await fundProject(projectId);
+              const escrowAmount = budgetMin * 0.5;
+              const feeRate = budgetMin < 500 ? 0.20 : 0.15;
+              const platformFee = budgetMin * feeRate;
+              const totalCharge = escrowAmount + platformFee;
+              setSubmitMessage(`Procesando pago ($${totalCharge.toFixed(2)})...`);
+              const fundResponse = await fundProject(projectId);
+              const escrow = fundResponse.escrow_deposit ?? escrowAmount;
+              const fee = fundResponse.platform_fee ?? platformFee;
+              const total = fundResponse.total_charged ?? totalCharge;
               showAlert({
                 title: '¡Proyecto Publicado y Financiado!',
-                text: `Se ha depositado el 50% ($${(budgetMin * 0.5).toFixed(2)}) y el proyecto está activo.`,
+                text: `Depósito en garantía (50%): $${escrow.toFixed(2)} | Tarifa de plataforma (${feeRate * 100}%): $${fee.toFixed(2)} | Total cobrado: $${total.toFixed(2)}`,
                 type: 'success'
               });
-            } catch (fundError) {
+            } catch (fundError: any) {
               console.error("Fund error", fundError);
+              const errorMsg = fundError?.response?.data?.message || 'No se pudo procesar el pago. Verifica tu saldo en la Billetera.';
               showAlert({
                 title: 'Proyecto Creado pero Pago Fallido',
-                text: 'El proyecto se creó pero no se pudo procesar el depósito. Por favor verifica tu saldo en la Billetera.',
+                text: errorMsg,
                 type: 'warning'
               });
-              // Could redirect to wallet or show retry
             }
           } else {
             showAlert({
@@ -913,6 +920,42 @@ export function PublishProjectSection({ onSectionChange, initialData, isEditing 
           </motion.div>
         </CardContent>
       </Card>
+
+      {/* Cost Breakdown - visible on final step */}
+      {currentStep === steps.length && !isEditing && formData.budget && (
+        <Card className="bg-[#0D0D0D] border-[#333333]">
+          <CardContent className="pt-4">
+            <h4 className="text-sm font-semibold text-white mb-3">Desglose de Costos</h4>
+            {(() => {
+              const budget = formData.budgetType === 'hourly' ? estimatedTotal : Number(formData.budget);
+              const escrow = budget * 0.5;
+              const feeRate = budget < 500 ? 0.20 : 0.15;
+              const fee = budget * feeRate;
+              const total = escrow + fee;
+              return (
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between text-gray-400">
+                    <span>Presupuesto del proyecto</span>
+                    <span>${budget.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-400">
+                    <span>Depósito en garantía (50%)</span>
+                    <span className="text-white">${escrow.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-400">
+                    <span>Tarifa de plataforma ({feeRate * 100}%)</span>
+                    <span className="text-white">${fee.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-[#333333] font-bold">
+                    <span className="text-white">Total a pagar ahora</span>
+                    <span className="text-primary">${total.toFixed(2)}</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
 
       {submitMessage ? (
         <div className="rounded-lg border border-[#333333] bg-[#0D0D0D] p-3 text-sm text-gray-200">

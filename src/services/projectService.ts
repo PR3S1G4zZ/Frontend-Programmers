@@ -116,7 +116,7 @@ export async function rejectApplication(applicationId: string) {
 }
 
 export async function fundProject(id: number) {
-  return apiRequest<{ message: string; project: ProjectResponse }>(`/projects/${id}/fund`, {
+  return apiRequest<{ message: string; project: ProjectResponse; escrow_deposit: number; platform_fee: number; platform_fee_rate: number; total_charged: number }>(`/projects/${id}/fund`, {
     method: 'POST',
   });
 }

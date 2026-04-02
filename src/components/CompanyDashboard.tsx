@@ -20,8 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { ProjectResponse } from '../services/projectService';
 import { WalletPaymentMethods } from './dashboard/wallet/WalletPaymentMethods';
 import { Workspace } from './dashboard/shared/Workspace';
-import { AppearanceSection } from './dashboard/settings/AppearanceSection';
-import { AppearanceSection } from './dashboard/settings/AppearanceSection';
+
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Settings as SettingsIcon } from 'lucide-react';
 

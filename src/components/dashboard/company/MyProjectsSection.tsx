@@ -445,7 +445,7 @@ export function MyProjectsSection({ onSectionChange }: MyProjectsSectionProps) {
           >
             <Card className="bg-[#1A1A1A] border-[#333333] hover-neon">
               <CardContent className="p-6">
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                   <div className="flex-1 space-y-4">
                     {/* Header */}
                     <div className="flex items-start justify-between">
@@ -614,7 +614,7 @@ export function MyProjectsSection({ onSectionChange }: MyProjectsSectionProps) {
                   </div>
 
                   {/* Actions */}
-                  <div className="ml-6 flex flex-col space-y-2">
+                  <div className="w-full sm:w-auto flex flex-col space-y-2 mt-4 sm:mt-0 sm:ml-6">
                     {project.status === 'open' && (
                       <Button
                         size="sm"

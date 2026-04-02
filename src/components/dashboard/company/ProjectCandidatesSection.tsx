@@ -253,7 +253,7 @@ export function ProjectCandidatesSection({ project, onBack }: ProjectCandidatesS
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex flex-row md:flex-col gap-2 pt-2 md:pt-0">
+                                    <div className="flex flex-col sm:flex-row md:flex-col gap-2 pt-2 md:pt-0 w-full md:w-auto">
                                         <Button
                                             variant="outline"
                                             className="border-[#444] text-gray-300 hover:bg-[#333] w-full md:w-auto"
@@ -296,7 +296,7 @@ export function ProjectCandidatesSection({ project, onBack }: ProjectCandidatesS
     return (
         <div className="space-y-6 p-4 sm:p-6">
             {/* Header */}
-            <div className="flex items-center justify-between space-x-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center space-x-4">
                     <Button variant="ghost" onClick={onBack} className="text-gray-400 hover:text-white">
                         <ArrowLeft className="h-6 w-6" />

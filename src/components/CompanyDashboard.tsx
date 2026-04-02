@@ -21,7 +21,7 @@ import type { ProjectResponse } from '../services/projectService';
 import { WalletPaymentMethods } from './dashboard/wallet/WalletPaymentMethods';
 import { Workspace } from './dashboard/shared/Workspace';
 import { AppearanceSection } from './dashboard/settings/AppearanceSection';
-import { NotificationSection } from './dashboard/shared/NotificationSection';
+import { AppearanceSection } from './dashboard/settings/AppearanceSection';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Settings as SettingsIcon } from 'lucide-react';
 
@@ -62,7 +62,6 @@ export function CompanyDashboard({ onLogout }: CompanyDashboardProps) {
     chat: 'Chat',
     'view-candidates': 'Candidatos del Proyecto',
     messages: 'Mensajes',
-    notifications: 'Notificaciones',
     settings: 'Configuración',
     wallet: 'Billetera & Pagos',
     workspace: 'Espacio de Trabajo',
@@ -149,8 +148,6 @@ export function CompanyDashboard({ onLogout }: CompanyDashboardProps) {
             </div>
           </div>
         );
-      case 'notifications':
-        return <NotificationSection />;
       case 'settings':
         return (
           <div className="p-8 space-y-6">

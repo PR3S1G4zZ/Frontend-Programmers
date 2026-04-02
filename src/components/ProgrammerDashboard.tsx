@@ -15,7 +15,6 @@ import { WalletPaymentMethods } from './dashboard/wallet/WalletPaymentMethods';
 import { MyActiveProjectsSection } from './dashboard/programmer/MyActiveProjectsSection';
 import { Workspace } from './dashboard/shared/Workspace';
 import { AppearanceSection } from './dashboard/settings/AppearanceSection';
-import { NotificationSection } from './dashboard/shared/NotificationSection';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import type { ProjectResponse } from '../services/projectService';
 
@@ -56,8 +55,6 @@ export function ProgrammerDashboard({ onLogout }: ProgrammerDashboardProps) {
         return <ProfileSection />;
       case 'chat':
         return <ChatSection userType="programmer" />;
-      case 'notifications':
-        return <NotificationSection />;
       case 'settings':
         return (
           <div className="p-8 space-y-6">

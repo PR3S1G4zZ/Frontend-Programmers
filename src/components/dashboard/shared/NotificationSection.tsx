@@ -12,7 +12,8 @@ import {
   DollarSign,
   FileCheck,
   FolderCheck,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -57,7 +58,11 @@ const typeConfig: Record<string, { icon: typeof Bell; color: string; bgColor: st
   },
 };
 
-export function NotificationSection() {
+interface NotificationSectionProps {
+  onClose?: () => void;
+}
+
+export function NotificationSection({ onClose }: NotificationSectionProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
@@ -150,32 +155,44 @@ export function NotificationSection() {
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
-  return (
-    <div className="p-4 sm:p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+  const content = (
+    <div className={onClose ? 'p-4 sm:p-6' : 'p-4 sm:p-8'}>
+      <div className={onClose ? 'space-y-4' : 'max-w-4xl mx-auto space-y-6'}>
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-              <Bell className="h-8 w-8 text-primary" />
+            <h2 className={onClose ? 'text-xl font-bold text-white flex items-center gap-2' : 'text-3xl font-bold text-white flex items-center gap-3'}>
+              <Bell className={onClose ? 'h-5 w-5 text-primary' : 'h-8 w-8 text-primary'} />
               Notificaciones
             </h2>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-sm">
               {unreadCount > 0
                 ? `Tienes ${unreadCount} notificación${unreadCount > 1 ? 'es' : ''} sin leer`
                 : 'Estás al día'}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadNotifications}
-            disabled={loading}
-            className="border-border"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadNotifications}
+              disabled={loading}
+              className="border-border"
+            >
+              <RefreshCw className={`h-4 w-4 ${onClose ? '' : 'mr-2'} ${loading ? 'animate-spin' : ''}`} />
+              {!onClose && 'Actualizar'}
+            </Button>
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="text-muted-foreground hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Filters & Actions */}
@@ -222,7 +239,7 @@ export function NotificationSection() {
         </div>
 
         {/* Notifications List */}
-        <ScrollArea className="h-[calc(100vh-320px)]">
+        <ScrollArea className={onClose ? 'h-[calc(100vh-220px)]' : 'h-[calc(100vh-320px)]'}>
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <RefreshCw className="h-8 w-8 text-primary animate-spin" />
@@ -337,4 +354,20 @@ export function NotificationSection() {
       </div>
     </div>
   );
+
+  if (onClose) {
+    return (
+      <>
+        <div
+          className="fixed inset-0 z-[55] bg-black/60"
+          onClick={onClose}
+        />
+        <div className="fixed inset-y-0 right-0 z-[60] w-full max-w-md bg-background border-l border-border shadow-2xl overflow-hidden">
+          {content}
+        </div>
+      </>
+    );
+  }
+
+  return content;
 }

@@ -17,8 +17,9 @@ import {
   Bell
 } from "lucide-react";
 import type { User as AuthUser } from "../services/authService";
-import { fetchUnreadCount } from "../services/notificationService";
+import { fetchNotifications } from "../services/notificationService";
 import { fetchConversations } from "../services/chatService";
+import { NotificationSection } from "./dashboard/shared/NotificationSection";
 
 interface SidebarProps {
   userType: 'programmer' | 'company' | 'admin';
@@ -29,6 +30,26 @@ interface SidebarProps {
   onClose?: () => void;
   user?: AuthUser | null;
 }
+
+// Maps notification types to programmer sidebar sections
+const programmerNotificationSectionMap: Record<string, string> = {
+  'App\\Notifications\\NewApplicationNotification': 'projects-active',
+  'App\\Notifications\\ApplicationAcceptedNotification': 'projects-active',
+  'App\\Notifications\\MilestoneSubmittedNotification': 'projects-active',
+  'App\\Notifications\\MilestoneApprovedNotification': 'projects-active',
+  'App\\Notifications\\ProjectCompletedNotification': 'projects-active',
+  'App\\Notifications\\ReviewReceivedNotification': 'portfolio',
+};
+
+// Maps notification types to company sidebar sections (all relate to projects)
+const companyNotificationSectionMap: Record<string, string> = {
+  'App\\Notifications\\NewApplicationNotification': 'my-projects',
+  'App\\Notifications\\ApplicationAcceptedNotification': 'my-projects',
+  'App\\Notifications\\MilestoneSubmittedNotification': 'my-projects',
+  'App\\Notifications\\MilestoneApprovedNotification': 'my-projects',
+  'App\\Notifications\\ProjectCompletedNotification': 'my-projects',
+  'App\\Notifications\\ReviewReceivedNotification': 'my-projects',
+};
 
 export function Sidebar({
   userType,
@@ -41,15 +62,29 @@ export function Sidebar({
 }: SidebarProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
+  const [notificationDots, setNotificationDots] = useState<Set<string>>(new Set());
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
 
-  const loadUnreadCount = useCallback(async () => {
+  const typeMap = userType === 'programmer' ? programmerNotificationSectionMap : companyNotificationSectionMap;
+
+  const loadNotificationData = useCallback(async () => {
     try {
-      const res = await fetchUnreadCount();
-      if (res.success) setUnreadCount(res.unread_count);
+      const res = await fetchNotifications(1, 50, 'unread');
+      if (res.success) {
+        setUnreadCount(res.unread_count);
+        const dots = new Set<string>();
+        for (const n of res.data) {
+          if (!n.read_at) {
+            const section = typeMap[n.type];
+            if (section) dots.add(section);
+          }
+        }
+        setNotificationDots(dots);
+      }
     } catch {
       // silently fail
     }
-  }, []);
+  }, [typeMap]);
 
   const loadChatUnreadCount = useCallback(async () => {
     try {
@@ -62,14 +97,14 @@ export function Sidebar({
   }, []);
 
   useEffect(() => {
-    loadUnreadCount();
+    loadNotificationData();
     loadChatUnreadCount();
     const interval = setInterval(() => {
-      loadUnreadCount();
+      loadNotificationData();
       loadChatUnreadCount();
     }, 30000);
     return () => clearInterval(interval);
-  }, [loadUnreadCount, loadChatUnreadCount]);
+  }, [loadNotificationData, loadChatUnreadCount]);
 
   const programmerSections = [
     { id: 'welcome', label: 'Mi Espacio', icon: Home },
@@ -78,7 +113,6 @@ export function Sidebar({
     { id: 'projects', label: 'Proyectos Publicados', icon: Search },
     { id: 'profile', label: 'Mi Perfil', icon: User },
     { id: 'chat', label: 'Chat', icon: MessageSquare, badge: chatUnreadCount },
-    { id: 'notifications', label: 'Notificaciones', icon: Bell, badge: unreadCount },
     { id: 'wallet', label: 'Billetera & Cobros', icon: Wallet },
     { id: 'settings', label: 'Configuración', icon: Settings }
   ];
@@ -89,7 +123,6 @@ export function Sidebar({
     { id: 'publish-project', label: 'Publicar Proyecto', icon: Plus },
     { id: 'search-programmers', label: 'Buscar Programadores', icon: Search },
     { id: 'chat', label: 'Chat', icon: MessageSquare, badge: chatUnreadCount },
-    { id: 'notifications', label: 'Notificaciones', icon: Bell, badge: unreadCount },
     { id: 'wallet', label: 'Billetera & Pagos', icon: Wallet },
     { id: 'settings', label: 'Configuración', icon: Settings }
   ];
@@ -113,12 +146,16 @@ export function Sidebar({
 
   const handleSectionChange = (sectionId: string) => {
     onSectionChange(sectionId);
-    if (sectionId === 'notifications') {
-      setUnreadCount(0);
-    }
     if (sectionId === 'chat') {
       setChatUnreadCount(0);
     }
+    if (onClose) {
+      onClose();
+    }
+  };
+
+  const handleBellClick = () => {
+    setNotificationPanelOpen(true);
     if (onClose) {
       onClose();
     }
@@ -186,11 +223,12 @@ export function Sidebar({
             {sections.map((section) => {
               const Icon = section.icon;
               const badge = (section as any).badge;
+              const hasDot = notificationDots.has(section.id);
               return (
                 <Button
                   key={section.id}
                   variant={currentSection === section.id ? "default" : "ghost"}
-                  className={`w-full justify-start ${currentSection === section.id
+                  className={`w-full justify-start relative ${currentSection === section.id
                     ? 'bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90'
                     : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                     }`}
@@ -203,6 +241,9 @@ export function Sidebar({
                       {badge > 99 ? '99+' : badge}
                     </span>
                   )}
+                  {hasDot && badge === 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
+                  )}
                 </Button>
               );
             })}
@@ -211,6 +252,21 @@ export function Sidebar({
 
         {/* Bottom Actions */}
         <div className="p-4 border-t border-sidebar-border space-y-2">
+          {userType !== 'admin' && (
+            <Button
+              variant="ghost"
+              className="w-full justify-start relative text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              onClick={handleBellClick}
+            >
+              <Bell className="h-5 w-5 mr-3" />
+              Notificaciones
+              {unreadCount > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Button>
+          )}
           <Button
             variant="ghost"
             className="w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -224,6 +280,11 @@ export function Sidebar({
           </Button>
         </div>
       </div>
+
+      {/* Notification Panel Overlay */}
+      {notificationPanelOpen && (
+        <NotificationSection onClose={() => setNotificationPanelOpen(false)} />
+      )}
     </>
   );
 }

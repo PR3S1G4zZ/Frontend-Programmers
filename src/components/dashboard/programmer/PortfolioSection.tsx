@@ -46,7 +46,7 @@ export function PortfolioSection() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const { showAlert } = useSweetAlert();
+  const { showAlert, Alert } = useSweetAlert();
 
   const getImageUrl = (path?: string) => {
     if (!path) return "/placeholder-project.jpg";
@@ -655,6 +655,8 @@ export function PortfolioSection() {
           </div>
         )}
       </div>
+
+      <Alert />
     </div>
   );
 }

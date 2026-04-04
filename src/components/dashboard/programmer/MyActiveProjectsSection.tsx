@@ -9,9 +9,10 @@ import apiClient from '../../../services/apiClient';
 
 interface MyActiveProjectsSectionProps {
     onWorkspaceSelect: (project: ProjectResponse) => void;
+    onSectionChange?: (section: string) => void;
 }
 
-export function MyActiveProjectsSection({ onWorkspaceSelect }: MyActiveProjectsSectionProps) {
+export function MyActiveProjectsSection({ onWorkspaceSelect, onSectionChange }: MyActiveProjectsSectionProps) {
     const [projects, setProjects] = useState<ProjectResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -129,7 +130,7 @@ export function MyActiveProjectsSection({ onWorkspaceSelect }: MyActiveProjectsS
                     <Button
                         variant="outline"
                         className="border-primary/30 text-primary hover:bg-primary/10"
-                        onClick={() => {/* navegar a proyectos publicados - el padre lo maneja */ }}
+                        onClick={() => onSectionChange?.('projects')}
                     >
                         <Play className="h-4 w-4 mr-2" />
                         Explorar proyectos

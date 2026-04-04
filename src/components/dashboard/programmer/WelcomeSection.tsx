@@ -204,7 +204,7 @@ export function WelcomeSection({ onSectionChange }: WelcomeSectionProps) {
 
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Deadline: {project.deadline}</span>
-                      <Button size="sm" variant="ghost" className="text-primary hover:bg-secondary">
+                      <Button size="sm" variant="ghost" className="text-primary hover:bg-secondary" onClick={() => onSectionChange('projects-active')}>
                         Ver detalles <ArrowRight className="h-4 w-4 ml-1" />
                       </Button>
                     </div>
@@ -262,6 +262,7 @@ export function WelcomeSection({ onSectionChange }: WelcomeSectionProps) {
                 variant="ghost"
                 size="sm"
                 className="w-full text-primary hover:bg-secondary"
+                onClick={() => onSectionChange('projects')}
               >
                 Ver toda la actividad
               </Button>

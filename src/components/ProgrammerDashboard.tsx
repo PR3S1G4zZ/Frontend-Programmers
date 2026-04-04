@@ -88,7 +88,7 @@ export function ProgrammerDashboard({ onLogout }: ProgrammerDashboardProps) {
           </div>
         );
       case 'projects-active':
-        return <MyActiveProjectsSection onWorkspaceSelect={(p) => {
+        return <MyActiveProjectsSection onSectionChange={setCurrentSection} onWorkspaceSelect={(p) => {
           setViewingWorkspace(p);
           setCurrentSection('workspace');
         }} />;
@@ -102,7 +102,7 @@ export function ProgrammerDashboard({ onLogout }: ProgrammerDashboardProps) {
               setCurrentSection('projects-active');
             }}
           />
-        ) : <MyActiveProjectsSection onWorkspaceSelect={(p) => {
+        ) : <MyActiveProjectsSection onSectionChange={setCurrentSection} onWorkspaceSelect={(p) => {
           setViewingWorkspace(p);
           setCurrentSection('workspace');
         }} />;

@@ -3,7 +3,7 @@ import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { ScrollArea } from '../../ui/scroll-area';
-import { MapPin, Clock, Star, Briefcase, Code, Award, X } from 'lucide-react';
+import { MapPin, Clock, Star, Briefcase, Code, Award, X, Calendar } from 'lucide-react';
 import type { DeveloperProfile } from '../../../services/developerService';
 import { Skeleton } from '../../ui/skeleton';
 
@@ -17,9 +17,16 @@ interface DeveloperProfileModalProps {
 export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }: DeveloperProfileModalProps) {
     if (!isOpen) return null;
 
+    const getImageUrl = (path?: string | null) => {
+        if (!path) return "";
+        if (path.startsWith('http') || path.startsWith('blob:')) return path;
+        const baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api').replace(/\/api\/?$/, '');
+        return `${baseUrl}/storage/${path.replace(/^\//, '')}`;
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-6xl w-full h-[95vh] bg-[#111] border-[#333333] p-0 overflow-hidden text-white rounded-xl flex flex-col">
+            <DialogContent className="max-w-5xl w-[95vw] md:w-full max-h-[90vh] h-[90vh] bg-card border-border p-0 overflow-hidden rounded-xl flex flex-col mx-auto">
                 <DialogHeader className="sr-only">
                     <DialogTitle>Perfil de Desarrollador: {developer?.name ?? 'Cargando...'}</DialogTitle>
                     <DialogDescription>
@@ -64,57 +71,56 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                                 className="absolute top-4 right-4 z-20 text-white/70 hover:text-white hover:bg-black/20 rounded-full"
                                 onClick={onClose}
                             >
-                                <X className="h-6 w-6" />
+                                <X className="h-5 w-5 md:h-6 md:w-6" />
                             </Button>
                         </div>
 
                         <div className="px-4 sm:px-8 pb-4 sm:pb-8 flex-1 overflow-hidden flex flex-col">
                             {/* Profile Header (Overlapping Banner) */}
-                            <div className="flex flex-col md:flex-row gap-4 sm:gap-6 -mt-16 relative z-10 mb-6 sm:mb-8">
-                                <Avatar className="h-24 w-24 sm:h-32 sm:w-32 border-4 border-[#111] shadow-2xl ring-4 ring-primary/10">
+                            <div className="flex flex-col md:flex-row gap-4 sm:gap-6 -mt-12 sm:-mt-16 relative z-10 mb-6 sm:mb-8">
+                                <Avatar className="h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 border-4 border-background shadow-2xl ring-4 ring-primary/10 bg-card mx-auto md:mx-0">
                                     {developer.profilePicture ? (
                                         <AvatarImage
-                                            src={developer.profilePicture}
+                                            src={getImageUrl(developer.profilePicture)}
                                             alt={developer.name}
                                             className="object-cover"
                                         />
                                     ) : null}
-                                    <AvatarFallback className="bg-gradient-to-br from-primary to-purple-700 text-2xl sm:text-3xl font-bold text-white uppercase">
+                                    <AvatarFallback className="bg-primary/20 text-xl sm:text-2xl md:text-3xl font-bold text-primary uppercase">
                                         {developer.name.split(' ').slice(0, 2).map(n => n[0]).join('')}
                                     </AvatarFallback>
                                 </Avatar>
 
-                                <div className="flex-1 pt-12 sm:pt-16 md:pt-20 space-y-2">
-                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div className="flex-1 pt-2 sm:pt-16 md:pt-20 space-y-2 text-center md:text-left">
+                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
                                         <div>
-                                            <h2 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2 sm:gap-3">
+                                            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center justify-center md:justify-start gap-1 sm:gap-2">
                                                 {developer.name}
                                                 {developer.isVerified && (
-                                                    <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 p-1 rounded-full">
-                                                        <Award className="h-4 w-4" />
+                                                    <span className="bg-primary/10 text-primary border border-primary/20 p-1 rounded-full">
+                                                        <Award className="h-3 w-3 sm:h-4 sm:w-4" />
                                                     </span>
                                                 )}
                                             </h2>
-                                            <p className="text-lg sm:text-xl text-primary font-medium">{developer.title}</p>
+                                            <p className="text-base sm:text-lg md:text-xl text-primary font-medium">{developer.title}</p>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-2xl sm:text-3xl font-bold text-white">${developer.hourlyRate}<span className="text-sm text-gray-500 font-normal">/h</span></p>
+                                        <div className="text-center md:text-right hidden md:block">
+                                            <p className="text-2xl sm:text-3xl font-bold text-foreground">${developer.hourlyRate || 0}<span className="text-sm text-muted-foreground font-normal">/h</span></p>
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-wrap gap-x-6 gap-y-3 sm:gap-x-8 sm:gap-y-4 text-sm sm:text-base text-gray-400">
-                                        <span className="flex items-center gap-2 hover:text-white transition-colors">
-                                            <MapPin className="h-4 w-4 sm:h-5 sm:w-5" /> {developer.location}
+                                    <div className="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 sm:gap-x-6 sm:gap-y-3 text-xs sm:text-sm text-muted-foreground">
+                                        <span className="flex items-center gap-1.5 hover:text-foreground transition-colors">
+                                            <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {developer.location || 'Ubicación no especificada'}
                                         </span>
-                                        <span className={`flex items-center gap-2 font-medium ${developer.availability === 'available' ? 'text-green-400' : 'text-gray-400'
-                                            }`}>
-                                            <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+                                        <span className={`flex items-center gap-1.5 font-medium ${developer.availability === 'available' ? 'text-green-500' : 'text-muted-foreground'}`}>
+                                            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                             {developer.availability === 'available' ? 'Disponible ahora' : 'Consultar disponibilidad'}
                                         </span>
-                                        <span className="flex items-center gap-2 text-yellow-400">
-                                            <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
-                                            <span className="text-white font-bold">{developer.rating}</span>
-                                            <span className="text-gray-500">({developer.reviewsCount} reseñas)</span>
+                                        <span className="flex items-center gap-1.5 text-yellow-500">
+                                            <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" />
+                                            <span className="text-foreground font-bold">{developer.rating?.toFixed(1) || '0.0'}</span>
+                                            <span className="text-muted-foreground">({developer.reviewsCount || 0} reseñas)</span>
                                         </span>
                                     </div>
                                 </div>
@@ -125,115 +131,118 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                                     {/* Left Content (Bio/Skills/Portfolio) - Takes 8 columns on lg */}
                                     <div className="lg:col-span-8 space-y-6 sm:space-y-8">
                                         {/* Bio */}
-                                        <section className="bg-[#151515] p-6 sm:p-8 rounded-2xl border border-[#222] shadow-sm">
-                                            <h3 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-3">
-                                                <div className="bg-primary/10 p-2.5 rounded-xl text-primary border border-primary/20">
-                                                    <Briefcase className="h-5 w-5 sm:h-6 sm:w-6" />
+                                        <section className="bg-background p-5 sm:p-6 rounded-2xl border border-border shadow-sm">
+                                            <h3 className="text-base sm:text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                                                <div className="bg-primary/10 p-2 rounded-lg text-primary border border-primary/20">
+                                                    <Briefcase className="h-4 w-4 sm:h-5 sm:w-5" />
                                                 </div>
                                                 Sobre mí
                                             </h3>
-                                            <p className="text-gray-300 leading-relaxed text-sm sm:text-base">
-                                                {developer.bio}
+                                            <p className="text-muted-foreground leading-relaxed text-sm">
+                                                {developer.bio || 'Este desarrollador aún no ha escrito una biografía profesional.'}
                                             </p>
                                         </section>
 
                                         {/* Skills */}
-                                        <section className="bg-[#151515] p-6 sm:p-8 rounded-2xl border border-[#222] shadow-sm">
-                                            <h3 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-3">
-                                                <div className="bg-primary/10 p-2.5 rounded-xl text-primary border border-primary/20">
-                                                    <Code className="h-5 w-5 sm:h-6 sm:w-6" />
+                                        <section className="bg-background p-5 sm:p-6 rounded-2xl border border-border shadow-sm">
+                                            <h3 className="text-base sm:text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                                                <div className="bg-primary/10 p-2 rounded-lg text-primary border border-primary/20">
+                                                    <Code className="h-4 w-4 sm:h-5 sm:w-5" />
                                                 </div>
                                                 Tecnologías & Herramientas
                                             </h3>
-                                            <div className="flex flex-wrap gap-2 sm:gap-3">
-                                                {(Array.isArray(developer.skills) ? developer.skills : []).map(skill => (
-                                                    <Badge key={skill} variant="secondary" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#111] text-gray-200 border border-[#333] hover:border-primary/50 transition-colors text-xs sm:text-sm">
+                                            <div className="flex flex-wrap gap-2 md:gap-3">
+                                                {(Array.isArray(developer.skills) && developer.skills.length > 0) ? developer.skills.map(skill => (
+                                                    <Badge key={skill} variant="secondary" className="px-3 py-1 bg-muted/50 text-foreground border border-border hover:border-primary/50 hover:bg-primary/10 transition-colors text-xs">
                                                         {skill}
                                                     </Badge>
-                                                ))}
+                                                )) : (
+                                                    <p className="text-sm text-muted-foreground italic">No hay habilidades listadas.</p>
+                                                )}
                                             </div>
                                         </section>
 
                                         {/* Portfolio */}
-                                        <section className="bg-[#151515] p-6 sm:p-8 rounded-2xl border border-[#222] shadow-sm">
-                                            <h3 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">Portafolio Destacado</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                                                {[1, 2].map((i) => (
-                                                    <div key={i} className="group bg-[#111] rounded-xl overflow-hidden border border-[#333] hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
-                                                        <div className="h-40 sm:h-48 bg-[#1a1a1a] flex items-center justify-center relative overflow-hidden">
-                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-80" />
-                                                            <span className="text-gray-500 font-medium z-10 group-hover:text-primary transition-colors">Proyecto Demo {i}</span>
+                                        <section className="bg-background p-5 sm:p-6 rounded-2xl border border-border shadow-sm">
+                                            <h3 className="text-base sm:text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                                                <div className="bg-primary/10 p-2 rounded-lg text-primary border border-primary/20">
+                                                    <Award className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                </div>
+                                                Proyectos Completados en la Plataforma
+                                            </h3>
+                                            <div className="flex flex-col gap-4">
+                                                {(Array.isArray(developer.completedProjectsList) && developer.completedProjectsList.length > 0) ? 
+                                                    developer.completedProjectsList.map((project) => (
+                                                    <div key={`proj-${project.id}`} className="group bg-card rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all hover:shadow-lg p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start gap-4">
+                                                        <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg bg-muted flex items-center justify-center shrink-0 border border-border">
+                                                            <Briefcase className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
                                                         </div>
-                                                        <div className="p-5 sm:p-6">
-                                                            <h4 className="font-bold text-white text-lg group-hover:text-primary transition-colors">E-commerce Platform</h4>
-                                                            <p className="text-sm text-gray-400 mt-2 mb-4 leading-relaxed line-clamp-2">Plataforma completa de ventas con panel administrativo, gestión de inventario y pagos en tiempo real.</p>
-                                                            <div className="flex flex-wrap gap-2">
-                                                                <Badge variant="outline" className="text-xs border-[#333] text-gray-400">React</Badge>
-                                                                <Badge variant="outline" className="text-xs border-[#333] text-gray-400">Node.js</Badge>
-                                                                <Badge variant="outline" className="text-xs border-[#333] text-gray-400">Stripe</Badge>
+                                                        <div className="flex-1">
+                                                            <h4 className="font-bold text-foreground text-base sm:text-lg group-hover:text-primary transition-colors">{project.title}</h4>
+                                                            <p className="text-xs sm:text-sm text-muted-foreground mt-1 mb-2">Para: <span className="text-foreground font-medium">{project.company_name}</span></p>
+                                                            <div className="flex items-center text-xs text-muted-foreground">
+                                                                <Calendar className="h-3 w-3 mr-1" />
+                                                                {new Date(project.completed_at).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
                                                             </div>
                                                         </div>
+                                                        <div className="text-left sm:text-right mt-2 sm:mt-0 whitespace-nowrap">
+                                                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-semibold px-2 sm:px-3">
+                                                                ${project.budget_min} - ${project.budget_max}
+                                                            </Badge>
+                                                        </div>
                                                     </div>
-                                                ))}
+                                                )) : (
+                                                    <div className="text-center p-8 border-2 border-dashed border-border rounded-xl">
+                                                        <p className="text-sm text-muted-foreground">Este usuario recién se une y no tiene proyectos completados todavía.</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </section>
                                     </div>
 
                                     {/* Right Sidebar (Stats/Contact) - Takes 4 columns on lg */}
                                     <div className="lg:col-span-4 space-y-4 sm:space-y-6">
-                                        <div className="bg-[#1A1A1A] rounded-xl p-5 sm:p-8 border border-[#333] space-y-6 sm:space-y-8 shadow-xl lg:sticky lg:top-0">
-                                            <div className="space-y-3 sm:space-y-4">
-                                                <Button className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]">
-                                                    Contactar Ahora
+                                        <div className="bg-card rounded-xl p-5 border border-border shadow-md lg:sticky lg:top-0">
+                                            <div className="flex md:hidden justify-between items-center mb-6 border-b border-border pb-4">
+                                                <span className="text-muted-foreground text-sm">Tarifa Estimada</span>
+                                                <span className="text-foreground font-bold text-lg">${developer.hourlyRate || 0}/h</span>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <Button className="w-full text-sm sm:text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all">
+                                                    Invitar a un Proyecto
                                                 </Button>
-                                                <Button variant="outline" className="w-full h-10 sm:h-12 border-[#333] text-gray-300 hover:text-white hover:bg-[#222]">
-                                                    Descargar CV
+                                                <Button variant="outline" className="w-full border-border text-foreground hover:bg-accent hover:text-accent-foreground text-sm sm:text-base">
+                                                    Contactar
                                                 </Button>
                                             </div>
 
-                                            <div className="pt-6 sm:pt-8 border-t border-[#333] space-y-4 sm:space-y-6">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-400">Tarifa Hora</span>
-                                                    <span className="text-white font-bold text-lg sm:text-xl">${developer.hourlyRate}</span>
+                                            <div className="pt-6 mt-6 border-t border-border space-y-4">
+                                                <div className="flex justify-between items-center text-sm">
+                                                    <span className="text-muted-foreground">Experiencia Mín.</span>
+                                                    <span className="text-foreground font-medium">{developer.experience || 0} años</span>
                                                 </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-400">Experiencia</span>
-                                                    <span className="text-white font-bold text-lg sm:text-xl">{developer.experience} años</span>
+                                                <div className="flex justify-between items-center text-sm">
+                                                    <span className="text-muted-foreground">Completados</span>
+                                                    <span className="text-foreground font-medium">{developer.completedProjects} proyectos</span>
                                                 </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-400">Proyectos</span>
-                                                    <span className="text-white font-bold text-lg sm:text-xl">{developer.completedProjects}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-400">Respuesta</span>
-                                                    <span className="text-green-400 font-bold text-sm sm:text-lg">Inmediata</span>
+                                                <div className="flex justify-between items-center text-sm">
+                                                    <span className="text-muted-foreground">Desempeño</span>
+                                                    <span className="text-primary font-semibold">{developer.rating >= 4.5 ? 'Excelente' : 'Bueno'}</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="bg-[#1A1A1A] rounded-xl p-4 sm:p-8 border border-[#333]">
-                                            <h4 className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 sm:mb-6">Certificaciones</h4>
-                                            <div className="space-y-4 sm:space-y-5">
-                                                <div className="flex gap-3 sm:gap-4">
-                                                    <div className="bg-yellow-500/10 p-2 rounded-lg sm:bg-yellow-500/10 sm:p-2.5 sm:rounded-lg h-fit">
-                                                        <Award className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-white font-bold text-sm sm:text-base">AWS Certified Solutions Architect</p>
-                                                        <p className="text-xs sm:text-sm text-gray-500 mt-1">Amazon Web Services • 2025</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-3 sm:gap-4">
-                                                    <div className="bg-blue-500/10 p-2 rounded-lg sm:bg-blue-500/10 sm:p-2.5 sm:rounded-lg h-fit">
-                                                        <Award className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-white font-bold text-sm sm:text-base">Meta Frontend Developer</p>
-                                                        <p className="text-xs sm:text-sm text-gray-500 mt-1">Coursera Professional • 2024</p>
-                                                    </div>
+                                        {Array.isArray(developer.languages) && developer.languages.length > 0 && (
+                                            <div className="bg-card rounded-xl p-5 border border-border shadow-sm">
+                                                <h4 className="text-xs sm:text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Idiomas</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {developer.languages.map((lang, idx) => (
+                                                        <Badge key={idx} variant="outline" className="bg-muted text-muted-foreground border-border">{lang}</Badge>
+                                                    ))}
                                                 </div>
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             </ScrollArea>

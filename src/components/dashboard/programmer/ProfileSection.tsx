@@ -18,15 +18,12 @@ import {
   Linkedin,
   Twitter,
   Save,
-  Plus,
-  X,
   Award,
   DollarSign,
   Clock,
   Settings,
   Shield,
   Bell,
-  Briefcase,
   Edit
 } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
@@ -60,13 +57,16 @@ export function ProfileSection() {
     profile_picture: '',
   });
 
+  const getImageUrl = (path?: string) => {
+    if (!path) return "/placeholder-user.jpg";
+    if (path.startsWith('http') || path.startsWith('blob:')) return path;
+    const baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api').replace(/\/api\/?$/, '');
+    return `${baseUrl}/storage/${path.replace(/^\//, '')}`;
+  };
+
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
 
   const [skills, setSkills] = useState<{ id?: number; name: string; level: number; years: number }[]>([]);
-
-  const [languages, setLanguages] = useState<{ id: number; name: string; level: string }[]>([]);
-
-  const [experience] = useState<{ id: number; company: string; position: string; period: string; description: string }[]>([]);
 
   const [settings, setSettings] = useState({
     profileVisibility: true,
@@ -134,13 +134,6 @@ export function ProfileSection() {
           level: 0,
           years: 0,
         })));
-
-        const languageList = Array.isArray(profile.languages) ? profile.languages : [];
-        setLanguages(languageList.map((name: string, index: number) => ({
-          id: index + 1,
-          name,
-          level: 'Sin nivel',
-        })));
       } catch (error) {
         console.error('Error cargando perfil', error);
         if (isMounted) {
@@ -189,10 +182,6 @@ export function ProfileSection() {
       formData.append('links[github]', profileData.github);
       formData.append('links[linkedin]', profileData.linkedin);
       formData.append('links[twitter]', profileData.twitter);
-
-      languages.forEach((lang, index) => {
-        formData.append(`languages[${index}]`, lang.name);
-      });
 
       if (profileImageFile) {
         formData.append('profile_picture', profileImageFile);
@@ -274,14 +263,13 @@ export function ProfileSection() {
       (profileData.linkedin && profileData.linkedin.trim() !== '') ||
       (profileData.twitter && profileData.twitter.trim() !== '')) filledFields++;
     if (skills && skills.length > 0) filledFields++;
-    if (languages && languages.length > 0) filledFields++;
 
     return Math.round((filledFields / totalFields) * 100);
   }, [
     profileData.name, profileData.email, profileData.phone, profileData.location,
     profileData.title, profileData.bio, profileData.hourlyRate, profileData.profile_picture,
     profileData.website, profileData.github, profileData.linkedin, profileData.twitter,
-    skills, languages
+    skills
   ]);
 
 
@@ -400,7 +388,6 @@ export function ProfileSection() {
                   {!profileData.bio && <li className="flex items-center gap-1.5 text-yellow-400/80"><span className="w-1.5 h-1.5 rounded-full bg-yellow-400 flex-shrink-0" />Escribe una biografía</li>}
                   {!profileData.profile_picture && <li className="flex items-center gap-1.5 text-yellow-400/80"><span className="w-1.5 h-1.5 rounded-full bg-yellow-400 flex-shrink-0" />Sube una foto de perfil</li>}
                   {skills.length === 0 && <li className="flex items-center gap-1.5 text-yellow-400/80"><span className="w-1.5 h-1.5 rounded-full bg-yellow-400 flex-shrink-0" />Añade habilidades técnicas</li>}
-                  {languages.length === 0 && <li className="flex items-center gap-1.5 text-yellow-400/80"><span className="w-1.5 h-1.5 rounded-full bg-yellow-400 flex-shrink-0" />Agrega tus idiomas</li>}
                   {!profileData.website && !profileData.github && !profileData.linkedin && <li className="flex items-center gap-1.5 text-yellow-400/80"><span className="w-1.5 h-1.5 rounded-full bg-yellow-400 flex-shrink-0" />Agrega redes profesionales</li>}
                 </ul>
               </div>
@@ -447,14 +434,14 @@ export function ProfileSection() {
                     <div className="relative">
                       {isEditing ? (
                         <ImageUpload
-                          currentImage={profileData.profile_picture || ''}
+                          currentImage={profileData.profile_picture ? getImageUrl(profileData.profile_picture) : ''}
                           name={profileData.name}
                           onImageChange={setProfileImageFile}
                         />
                       ) : (
                         <div className="relative">
                           <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
-                            <AvatarImage src={profileData.profile_picture || ''} object-cover />
+                            <AvatarImage src={profileData.profile_picture ? getImageUrl(profileData.profile_picture) : ''} className="object-cover" />
                             <AvatarFallback className="bg-primary text-primary-foreground text-xl">
                               {profileData.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
                             </AvatarFallback>
@@ -658,79 +645,6 @@ export function ProfileSection() {
                         placeholder="@usuario-twitter"
                       />
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Experience */}
-              <Card className="bg-card border-border hover:border-primary/20 transition-colors">
-                <CardHeader>
-                  <CardTitle className="text-foreground flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Briefcase className="h-5 w-5 mr-2" />
-                      Experiencia Profesional
-                    </div>
-                    {isEditing && (
-                      <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Agregar
-                      </Button>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {experience.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Sin experiencia registrada.</p>
-                  ) : experience.map((exp) => (
-                    <motion.div
-                      key={`exp-${exp.id}`}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 * exp.id }}
-                      className="border-l-2 border-primary pl-4 pb-4 last:pb-0"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-foreground">{exp.position}</h4>
-                          <p className="text-primary text-sm">{exp.company}</p>
-                          <p className="text-muted-foreground text-sm mb-2">{exp.period}</p>
-                          <p className="text-muted-foreground text-sm">{exp.description}</p>
-                        </div>
-                        {isEditing && (
-                          <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive">
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Languages */}
-              <Card className="bg-card border-border hover:border-primary/20 transition-colors">
-                <CardHeader>
-                  <CardTitle className="text-foreground flex items-center">
-                    <Globe className="h-5 w-5 mr-2" />
-                    Idiomas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {languages.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">Sin idiomas registrados.</p>
-                    ) : languages.map((lang) => (
-                      <motion.div
-                        key={`lang-${lang.id}`}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.1 * lang.id }}
-                        className="text-center p-4 bg-background rounded-lg border border-border"
-                      >
-                        <h4 className="font-semibold text-foreground">{lang.name}</h4>
-                        <p className="text-sm text-muted-foreground">{lang.level}</p>
-                      </motion.div>
-                    ))}
                   </div>
                 </CardContent>
               </Card>

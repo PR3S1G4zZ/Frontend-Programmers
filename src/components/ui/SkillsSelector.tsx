@@ -40,10 +40,10 @@ const PREDEFINED_SKILLS = [
 ];
 
 const SKILL_LEVELS = [
-    { value: 1, label: 'Básico', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
-    { value: 2, label: 'Intermedio', color: 'bg-green-500/10 text-green-500 border-green-500/20' },
-    { value: 3, label: 'Avanzado', color: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
-    { value: 4, label: 'Experto', color: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
+    { value: 1, label: 'Básico', color: 'bg-primary/5 text-primary border-primary/20' },
+    { value: 2, label: 'Intermedio', color: 'bg-primary/10 text-primary border-primary/30' },
+    { value: 3, label: 'Avanzado', color: 'bg-primary/20 text-primary border-primary/50' },
+    { value: 4, label: 'Experto', color: 'bg-primary text-primary-foreground border-primary' },
 ];
 
 export function SkillsSelector({ skills, onSkillsChange, isEditing }: SkillsSelectorProps) {
@@ -137,7 +137,7 @@ export function SkillsSelector({ skills, onSkillsChange, isEditing }: SkillsSele
                     >
                         <div className="flex items-start justify-between">
                             <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-base font-semibold px-4 py-1.5 bg-primary/5">
+                                <Badge variant="outline" className="text-base font-semibold px-4 py-1.5 border-primary/30 text-foreground bg-background">
                                     {skill.name}
                                 </Badge>
                             </div>

@@ -49,8 +49,9 @@ export function ProgrammerDashboard({ onLogout }: ProgrammerDashboardProps) {
         return (
           <WelcomeSection
             onSectionChange={setCurrentSection}
-            onWorkspaceSelect={(_id) => {
-              setCurrentSection('projects-active');
+            onWorkspaceSelect={(project) => {
+              setViewingWorkspace(project);
+              setCurrentSection('workspace');
             }}
           />
         );
@@ -117,7 +118,10 @@ export function ProgrammerDashboard({ onLogout }: ProgrammerDashboardProps) {
         return (
           <WelcomeSection
             onSectionChange={setCurrentSection}
-            onWorkspaceSelect={() => setCurrentSection('projects-active')}
+            onWorkspaceSelect={(project) => {
+              setViewingWorkspace(project);
+              setCurrentSection('workspace');
+            }}
           />
         );
     }

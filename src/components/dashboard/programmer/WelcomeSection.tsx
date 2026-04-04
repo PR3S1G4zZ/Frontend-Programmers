@@ -22,9 +22,11 @@ import { dashboardService } from "../../../services/dashboardService";
 import type { DashboardData } from "../../../services/dashboardService";
 import { toast } from "sonner";
 
+import type { ProjectResponse } from "../../../services/projectService";
+
 interface WelcomeSectionProps {
   onSectionChange: (section: string) => void;
-  onWorkspaceSelect: (id: string | number) => void;
+  onWorkspaceSelect: (project: ProjectResponse) => void;
 }
 
 export function WelcomeSection({ onSectionChange, onWorkspaceSelect }: WelcomeSectionProps) {
@@ -209,7 +211,7 @@ export function WelcomeSection({ onSectionChange, onWorkspaceSelect }: WelcomeSe
                         size="sm" 
                         variant="ghost" 
                         className="text-primary hover:bg-secondary" 
-                        onClick={() => onWorkspaceSelect(project.id)}
+                        onClick={() => onWorkspaceSelect(project.project)}
                       >
                         Ver detalles <ArrowRight className="h-4 w-4 ml-1" />
                       </Button>

@@ -9,6 +9,8 @@ export interface DashboardStats {
     unread_messages: number;
 }
 
+import type { ProjectResponse } from './projectService';
+
 export interface ActiveProjectSummary {
     id: number;
     title: string;
@@ -16,6 +18,7 @@ export interface ActiveProjectSummary {
     progress: number;
     deadline: string;
     value: string;
+    project: ProjectResponse;
 }
 
 export interface ActivityItem {

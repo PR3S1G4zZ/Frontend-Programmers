@@ -728,6 +728,13 @@ export function MyProjectsSection({ onSectionChange }: MyProjectsSectionProps) {
             setShowReviewDialog(open);
             if (!open) setProjectForReview(null);
           }}
+          onAllRated={() => {
+            showAlert({
+              title: '¡Calificación completa!',
+              text: 'Has calificado a todos los desarrolladores del proyecto.',
+              type: 'success'
+            });
+          }}
         />
       )}
     </div >

@@ -18,6 +18,7 @@ interface ReviewDialogProps {
     project: ProjectResponse;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onAllRated?: () => void;
 }
 
 interface ReviewMetrics {
@@ -53,7 +54,7 @@ const METRIC_LABELS: Record<keyof Omit<ReviewMetrics, 'rating'>, string> = {
     post_delivery_support_rating: 'Soporte Post-Entrega',
 };
 
-export function ReviewDialog({ project, open, onOpenChange }: ReviewDialogProps) {
+export function ReviewDialog({ project, open, onOpenChange, onAllRated }: ReviewDialogProps) {
     const [metrics, setMetrics] = useState<ReviewMetrics>({ ...DEFAULT_METRICS });
     const [comment, setComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,7 +90,8 @@ export function ReviewDialog({ project, open, onOpenChange }: ReviewDialogProps)
         setRatedDeveloperIds(new Set());
         resetForm();
         onOpenChange(false);
-    }, [onOpenChange, resetForm]);
+        onAllRated?.();
+    }, [onOpenChange, resetForm, onAllRated]);
 
     const handleMetricChange = (metric: keyof ReviewMetrics, value: number) => {
         setMetrics(prev => ({ ...prev, [metric]: value }));

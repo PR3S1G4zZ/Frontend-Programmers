@@ -123,6 +123,10 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
                     project={project}
                     open={showReviewDialog}
                     onOpenChange={setShowReviewDialog}
+                    onAllRated={() => {
+                        // Return to projects list after all developers are rated
+                        onBack();
+                    }}
                 />
             )}
 

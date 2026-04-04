@@ -19,9 +19,21 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
 
     const getImageUrl = (path?: string | null) => {
         if (!path) return "";
-        if (path.startsWith('http') || path.startsWith('blob:')) return path;
-        const baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api').replace(/\/api\/?$/, '');
-        return `${baseUrl}/storage/${path.replace(/^\//, '')}`;
+        try {
+            const baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api').replace(/\/api\/?$/, '');
+            if (path.startsWith('http')) {
+                // If the path contains localhost or 127.0.0.1 but the baseUrl does not, rewrite it
+                if ((path.includes('localhost') || path.includes('127.0.0.1')) && !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1')) {
+                    const urlPath = new URL(path).pathname;
+                    return `${baseUrl}${urlPath}`;
+                }
+                return path;
+            }
+            if (path.startsWith('blob:')) return path;
+            return `${baseUrl}/storage/${path.replace(/^\//, '').replace(/^storage\//, '')}`;
+        } catch {
+            return path;
+        }
     };
 
     return (
@@ -58,9 +70,9 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                         </div>
                     </div>
                 ) : (
-                    <div className="flex flex-col max-h-[95vh] bg-background">
+                    <div className="flex flex-col h-full bg-background overflow-hidden relative">
                         {/* Hero Section / Banner */}
-                        <div className="relative h-32 sm:h-40 bg-gradient-to-r from-[#2a2a2a] to-[#1a1a1a] overflow-hidden">
+                        <div className="relative h-20 sm:h-32 bg-gradient-to-r from-[#2a2a2a] to-[#1a1a1a] overflow-hidden shrink-0">
                             <div className="absolute inset-0 bg-grid-black/[0.02] dark:bg-grid-white/[0.02] bg-[length:20px_20px]" />
                             <div className="absolute top-0 right-0 p-4 sm:p-8 opacity-10">
                                 <Code className="h-32 sm:h-64 w-32 sm:w-64 text-foreground transform rotate-12" />
@@ -75,9 +87,9 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                             </Button>
                         </div>
 
-                        <div className="px-4 sm:px-8 pb-4 sm:pb-8 flex-1 overflow-hidden flex flex-col">
+                        <div className="px-4 sm:px-8 pb-4 flex-1 overflow-hidden flex flex-col relative z-10">
                             {/* Profile Header (Overlapping Banner) */}
-                            <div className="flex flex-col md:flex-row gap-4 sm:gap-6 -mt-12 sm:-mt-16 relative z-10 mb-6 sm:mb-8">
+                            <div className="flex flex-col md:flex-row gap-4 sm:gap-6 -mt-10 sm:-mt-16 relative z-10 mb-6 shrink-0">
                                 <Avatar className="h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 border-4 border-background shadow-2xl ring-4 ring-primary/10 bg-card mx-auto md:mx-0">
                                     {developer.profilePicture ? (
                                         <AvatarImage

@@ -56,8 +56,25 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
   // Paginación: mostrar de a 12 developers con "Cargar más"
   const [visibleCount, setVisibleCount] = useState(12);
   const { showAlert } = useSweetAlert();
-
   const allSkills = useMemo(() => Array.from(new Set(developers.flatMap(d => d.skills))).sort(), [developers]);
+
+  const getImageUrl = (path?: string | null) => {
+    if (!path) return "";
+    try {
+        const baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api').replace(/\/api\/?$/, '');
+        if (path.startsWith('http')) {
+            if ((path.includes('localhost') || path.includes('127.0.0.1')) && !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1')) {
+                const urlPath = new URL(path).pathname;
+                return `${baseUrl}${urlPath}`;
+            }
+            return path;
+        }
+        if (path.startsWith('blob:')) return path;
+        return `${baseUrl}/storage/${path.replace(/^\//, '').replace(/^storage\//, '')}`;
+    } catch {
+        return path;
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -65,17 +82,22 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
       setIsLoading(true);
       setError(null);
       try {
-        const [devsResponse, favsResponse] = await Promise.all([
+        const results = await Promise.all([
           fetchDevelopers(),
           fetchFavorites()
         ]);
+        
         if (!isMounted) return;
-        // Normalizar skills: la API puede devolver objetos {id, name} en vez de strings
+
+        const devsResponse = results[0] as { success: boolean, data: DeveloperProfile[] };
+        const favsResponse = results[1] as any;
+
         const normalizeArray = (val: any): any[] => {
           if (Array.isArray(val)) return val;
           if (typeof val === 'string') { try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; } }
           return [];
         };
+
         const normalizedDevs = (Array.isArray(devsResponse.data) ? devsResponse.data : []).map((dev: any) => ({
           ...dev,
           skills: normalizeArray(dev.skills).map((s: any) =>
@@ -85,9 +107,17 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
             typeof l === 'string' ? l : (l.name ?? String(l))
           ),
         }));
+
         setDevelopers(normalizedDevs);
-        // Assuming fetchFavorites returns array of IDs
-        setFavorites(Array.isArray(favsResponse) ? favsResponse : Array.isArray(favsResponse?.data) ? favsResponse.data : []);
+        
+        // Handle favorites response (could be array of IDs or object with data array)
+        if (Array.isArray(favsResponse)) {
+            setFavorites(favsResponse);
+        } else if (favsResponse && Array.isArray(favsResponse.data)) {
+            setFavorites(favsResponse.data);
+        } else {
+            setFavorites([]);
+        }
       } catch (error) {
         console.error('Error cargando datos', error);
         if (isMounted) {
@@ -526,7 +556,7 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
                       <div className="flex items-center space-x-4">
                         <div className="relative">
                           <Avatar className="h-16 w-16 border-2 border-transparent group-hover:border-primary transition-colors duration-300 ring-2 ring-background">
-                            <AvatarImage src={developer.profilePicture || ''} />
+                            <AvatarImage src={getImageUrl(developer.profilePicture)} />
                             <AvatarFallback className="bg-gradient-to-br from-primary/80 to-purple-600/80 text-white text-lg font-bold">
                               {developer.name.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>

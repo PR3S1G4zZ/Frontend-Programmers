@@ -58,17 +58,17 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                         </div>
                     </div>
                 ) : (
-                    <div className="flex flex-col max-h-[95vh] bg-[#111]">
+                    <div className="flex flex-col max-h-[95vh] bg-background">
                         {/* Hero Section / Banner */}
                         <div className="relative h-32 sm:h-40 bg-gradient-to-r from-[#2a2a2a] to-[#1a1a1a] overflow-hidden">
-                            <div className="absolute inset-0 bg-grid-white/[0.02] bg-[length:20px_20px]" />
+                            <div className="absolute inset-0 bg-grid-black/[0.02] dark:bg-grid-white/[0.02] bg-[length:20px_20px]" />
                             <div className="absolute top-0 right-0 p-4 sm:p-8 opacity-10">
-                                <Code className="h-32 sm:h-64 w-32 sm:w-64 text-white transform rotate-12" />
+                                <Code className="h-32 sm:h-64 w-32 sm:w-64 text-foreground transform rotate-12" />
                             </div>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="absolute top-4 right-4 z-20 text-white/70 hover:text-white hover:bg-black/20 rounded-full"
+                                className="absolute top-4 right-4 z-20 text-foreground/70 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 rounded-full"
                                 onClick={onClose}
                             >
                                 <X className="h-5 w-5 md:h-6 md:w-6" />

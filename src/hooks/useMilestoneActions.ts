@@ -46,7 +46,7 @@ export function useMilestoneActions({ projectId, onUpdate, developerId }: UseMil
             await apiClient.post(`/projects/${projectId}/milestones/${selectedMilestone.id}/submit`, {
                 deliverables: [deliverableLink]
             });
-            showSwal({ icon: 'success', title: 'Entregado', text: 'El hito ha sido enviado a revisión', timer: 1500, showConfirmButton: false });
+            await showSwal({ icon: 'success', title: 'Entregado', text: 'El hito ha sido enviado a revisión', showConfirmButton: true, confirmButtonText: 'Entendido' });
             setIsSubmitDialogOpen(false);
             onUpdate?.();
         } catch (error: any) {

@@ -63,18 +63,53 @@ export function Workspace({ projectId, userType, onBack }: WorkspaceProps) {
     const handleCompleteProject = async () => {
         if (!project) return;
 
+        // Confirmation dialog before completing
+        const Swal = (await import('sweetalert2')).default;
+        const confirmation = await Swal.fire({
+            title: '¿Finalizar Proyecto?',
+            html: `<p>Se cobrará el <strong>50% restante</strong> del presupuesto y se liberará el pago completo a los desarrolladores.</p><p class="text-sm text-gray-400 mt-2">Esta acción no se puede deshacer.</p>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, finalizar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#ef4444',
+            background: '#1f2937',
+            color: '#f3f4f6',
+        });
+
+        if (!confirmation.isConfirmed) return;
+
         setIsCompleting(true);
         try {
             const response = await completeProject(project.id);
             if (response.project) {
                 setProject(response.project);
                 setProjectCompleted(true);
+                // Refresh all data (Kanban, Timeline, etc.)
+                setRefreshTrigger(prev => prev + 1);
                 // Show review dialog after completing
                 setShowReviewDialog(true);
             }
+            await Swal.fire({
+                icon: 'success',
+                title: '¡Proyecto Completado!',
+                text: 'El pago ha sido liberado a los desarrolladores exitosamente.',
+                confirmButtonColor: '#10b981',
+                background: '#1f2937',
+                color: '#f3f4f6',
+            });
         } catch (error: any) {
             console.error("Error completing project", error);
-            alert(error.response?.data?.message || 'Error al completar el proyecto');
+            const message = error.response?.data?.message || error.message || 'Error al completar el proyecto';
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error al finalizar',
+                text: message,
+                confirmButtonColor: '#ef4444',
+                background: '#1f2937',
+                color: '#f3f4f6',
+            });
         } finally {
             setIsCompleting(false);
         }

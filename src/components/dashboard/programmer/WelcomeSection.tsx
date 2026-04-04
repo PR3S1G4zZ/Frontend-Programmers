@@ -24,9 +24,10 @@ import { toast } from "sonner";
 
 interface WelcomeSectionProps {
   onSectionChange: (section: string) => void;
+  onWorkspaceSelect: (id: string | number) => void;
 }
 
-export function WelcomeSection({ onSectionChange }: WelcomeSectionProps) {
+export function WelcomeSection({ onSectionChange, onWorkspaceSelect }: WelcomeSectionProps) {
   const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -204,7 +205,12 @@ export function WelcomeSection({ onSectionChange }: WelcomeSectionProps) {
 
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Deadline: {project.deadline}</span>
-                      <Button size="sm" variant="ghost" className="text-primary hover:bg-secondary" onClick={() => onSectionChange('projects-active')}>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-primary hover:bg-secondary" 
+                        onClick={() => onWorkspaceSelect(project.id)}
+                      >
                         Ver detalles <ArrowRight className="h-4 w-4 ml-1" />
                       </Button>
                     </div>

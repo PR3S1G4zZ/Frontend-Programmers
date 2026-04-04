@@ -123,9 +123,9 @@ export function MyActiveProjectsSection({ onWorkspaceSelect, onSectionChange }: 
                     <div className="h-20 w-20 bg-primary/5 rounded-full flex items-center justify-center mb-4 border border-primary/20">
                         <Clock className="h-10 w-10 text-primary/50" />
                     </div>
-                    <h3 className="text-xl font-semibold text-foreground mb-2">Sin proyectos activos</h3>
+                    <h3 className="text-xl font-semibold text-foreground mb-2">Sin proyectos en curso</h3>
                     <p className="text-muted-foreground max-w-md text-center mb-6">
-                        Aún no tienes proyectos en curso. Explora las oportunidades disponibles y postúlate para comenzar un nuevo reto.
+                        Aquí verás los proyectos una vez que la empresa los inicie oficialmente. Mientras tanto, explora nuevas oportunidades y postúlate.
                     </p>
                     <Button
                         variant="outline"

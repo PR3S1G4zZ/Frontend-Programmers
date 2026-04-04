@@ -46,7 +46,14 @@ export function ProgrammerDashboard({ onLogout }: ProgrammerDashboardProps) {
   const renderSection = () => {
     switch (currentSection) {
       case 'welcome':
-        return <WelcomeSection onSectionChange={setCurrentSection} />;
+        return (
+          <WelcomeSection
+            onSectionChange={setCurrentSection}
+            onWorkspaceSelect={(_id) => {
+              setCurrentSection('projects-active');
+            }}
+          />
+        );
       case 'portfolio':
         return <PortfolioSection />;
       case 'projects':
@@ -107,7 +114,12 @@ export function ProgrammerDashboard({ onLogout }: ProgrammerDashboardProps) {
           setCurrentSection('workspace');
         }} />;
       default:
-        return <WelcomeSection onSectionChange={setCurrentSection} />;
+        return (
+          <WelcomeSection
+            onSectionChange={setCurrentSection}
+            onWorkspaceSelect={() => setCurrentSection('projects-active')}
+          />
+        );
     }
   };
 

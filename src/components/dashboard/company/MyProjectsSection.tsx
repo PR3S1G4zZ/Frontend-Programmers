@@ -23,7 +23,8 @@ import {
   Play
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { fetchCompanyProjects, deleteProject, updateProject, getDeveloperProgress, type ProjectResponse } from '../../../services/projectService';
+import { fetchCompanyProjects, deleteProject, completeProject, getDeveloperProgress, type ProjectResponse } from '../../../services/projectService';
+import { ReviewDialog } from '../shared/ReviewDialog';
 import { useSweetAlert } from '../../ui/sweet-alert';
 import {
   DropdownMenu,
@@ -134,6 +135,8 @@ export function MyProjectsSection({ onSectionChange }: MyProjectsSectionProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [projectForReview, setProjectForReview] = useState<ProjectResponse | null>(null);
   const { showAlert, Alert } = useSweetAlert();
 
   const handleDelete = async (projectId: string) => {
@@ -165,26 +168,41 @@ export function MyProjectsSection({ onSectionChange }: MyProjectsSectionProps) {
 
   const handleComplete = (project: Project) => {
     showAlert({
-      title: '¿Marcar como completado?',
-      text: 'El proyecto se marcará como terminado. Esta acción no se puede deshacer.',
+      title: '¿Finalizar Proyecto?',
+      text: 'Se cobrará el 50% restante del presupuesto y se liberará el pago completo a los desarrolladores. Esta acción no se puede deshacer.',
       type: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Sí, completar',
+      confirmButtonText: 'Sí, finalizar',
       cancelButtonText: 'Cancelar',
       onConfirm: async () => {
         try {
-          await updateProject(String(project.id), { ...project.originalData, status: 'completed' });
-          setProjects(projects.map(p => p.id === String(project.id) ? { ...p, status: 'completed' } : p));
+          const response = await completeProject(Number(project.id));
+          // Update local state
+          if (response.project) {
+            setProjects(prev => prev.map(p =>
+              p.id === String(project.id)
+                ? { ...p, status: 'completed', progress: 100, originalData: response.project }
+                : p
+            ));
+            // Trigger review dialog for rating developers
+            setProjectForReview(response.project);
+            setShowReviewDialog(true);
+          } else {
+            setProjects(prev => prev.map(p =>
+              p.id === String(project.id) ? { ...p, status: 'completed', progress: 100 } : p
+            ));
+          }
           showAlert({
             title: '¡Proyecto Completado!',
-            text: 'El proyecto ha sido marcado como finalizado.',
+            text: 'El pago ha sido liberado a los desarrolladores exitosamente.',
             type: 'success'
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error completing project', error);
+          const message = error.response?.data?.message || 'No se pudo finalizar el proyecto.';
           showAlert({
-            title: 'Error',
-            text: 'No se pudo actualizar el estado del proyecto.',
+            title: 'Error al finalizar',
+            text: message,
             type: 'error'
           });
         }
@@ -700,6 +718,18 @@ export function MyProjectsSection({ onSectionChange }: MyProjectsSectionProps) {
         )
       }
       <Alert />
+
+      {/* Review Dialog for multi-developer rating after completion */}
+      {projectForReview && (
+        <ReviewDialog
+          project={projectForReview}
+          open={showReviewDialog}
+          onOpenChange={(open) => {
+            setShowReviewDialog(open);
+            if (!open) setProjectForReview(null);
+          }}
+        />
+      )}
     </div >
   );
 }

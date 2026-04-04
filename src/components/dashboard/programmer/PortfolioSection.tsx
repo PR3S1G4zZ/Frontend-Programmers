@@ -23,6 +23,7 @@ import {
 import { portfolioService } from "../../../services/portfolioService";
 import type { PortfolioProject } from "../../../services/portfolioService";
 import { toast } from "sonner";
+import { useSweetAlert } from "../../ui/sweet-alert";
 
 export function PortfolioSection() {
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
@@ -44,6 +45,15 @@ export function PortfolioSection() {
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const { showAlert } = useSweetAlert();
+
+  const getImageUrl = (path?: string) => {
+    if (!path) return "/placeholder-project.jpg";
+    if (path.startsWith('http') || path.startsWith('blob:')) return path;
+    const baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api').replace(/\/api\/?$/, '');
+    return `${baseUrl}/storage/${path.replace(/^\//, '')}`;
+  };
 
   useEffect(() => {
     loadProjects();
@@ -116,32 +126,64 @@ export function PortfolioSection() {
 
       if (editingProject) {
         await portfolioService.update(editingProject.id, data);
-        toast.success("Proyecto actualizado correctamente");
+        showAlert({
+          title: "¡Éxito!",
+          text: "Proyecto actualizado correctamente",
+          type: "success",
+          theme: "cyber",
+          timer: 3000
+        });
       } else {
         await portfolioService.create(data);
-        toast.success("Proyecto agregado correctamente");
+        showAlert({
+          title: "¡Éxito!",
+          text: "Proyecto agregado correctamente",
+          type: "success",
+          theme: "cyber",
+          timer: 3000
+        });
       }
       setIsModalOpen(false);
       resetForm();
       loadProjects();
     } catch (error) {
       console.error("Error saving project:", error);
-      toast.error(editingProject ? "Error al actualizar el proyecto" : "Error al crear el proyecto");
+      showAlert({
+        title: "Error al guardar",
+        text: error instanceof Error ? error.message : "Comprueba los campos e inténtalo de nuevo.",
+        type: "error",
+        theme: "cyber"
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("¿Estás seguro de eliminar este proyecto?")) return;
-    try {
-      await portfolioService.delete(id);
-      toast.success("Proyecto eliminado");
-      loadProjects();
-    } catch (error) {
-      console.error("Error deleting project:", error);
-      toast.error("Error al eliminar el proyecto");
-    }
+    showAlert({
+      title: "¿Eliminar proyecto?",
+      text: "Esta acción no se puede deshacer.",
+      type: "warning",
+      theme: "cyber",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      onConfirm: async () => {
+        try {
+          await portfolioService.delete(id);
+          toast.success("Proyecto eliminado");
+          loadProjects();
+        } catch (error) {
+          console.error("Error deleting project:", error);
+          showAlert({
+            title: "Error",
+            text: "No se pudo eliminar el proyecto.",
+            type: "error",
+            theme: "cyber"
+          });
+        }
+      }
+    });
   };
 
   const resetForm = () => {
@@ -172,7 +214,7 @@ export function PortfolioSection() {
       technologies: Array.isArray(project.technologies) ? project.technologies.join(', ') : project.technologies || '',
       featured: project.featured
     });
-    setImagePreview(project.image_url || null);
+    setImagePreview(project.image_url ? getImageUrl(project.image_url) : null);
     setSelectedImage(null);
     setIsModalOpen(true);
   };
@@ -225,129 +267,166 @@ export function PortfolioSection() {
               Agregar Proyecto
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] bg-card border-border">
-            <DialogHeader>
-              <DialogTitle>{editingProject ? 'Editar Proyecto' : 'Agregar Nuevo Proyecto'}</DialogTitle>
+          <DialogContent className="sm:max-w-[700px] bg-[#111111] border-[#333333] shadow-2xl overflow-y-auto max-h-[90vh]">
+            <DialogHeader className="border-b border-[#222222] pb-4 mb-4">
+              <DialogTitle className="text-xl font-semibold text-white">
+                {editingProject ? 'Editar Proyecto' : 'Agregar Nuevo Proyecto'}
+              </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Título</Label>
-                  <Input
-                    id="title" name="title"
-                    value={formData.title} onChange={handleInputChange}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Sección Principal */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="title" className="text-gray-300 text-sm">Título del Proyecto <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="title" name="title"
+                      value={formData.title} onChange={handleInputChange}
+                      className="bg-[#1A1A1A] border-[#333333] focus:border-[#00C46A] focus:ring-1 focus:ring-[#00C46A] transition-all text-white placeholder-gray-500 rounded-lg p-2.5 h-auto"
+                      placeholder="Ej: E-Commerce React"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="client" className="text-gray-300 text-sm">Cliente o Empresa</Label>
+                    <Input
+                      id="client" name="client"
+                      value={formData.client} onChange={handleInputChange}
+                      className="bg-[#1A1A1A] border-[#333333] focus:border-[#00C46A] focus:ring-1 focus:ring-[#00C46A] transition-all text-white placeholder-gray-500 rounded-lg p-2.5 h-auto"
+                      placeholder="Ej: Cliente Independiente"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 h-full flex flex-col">
+                  <Label htmlFor="description" className="text-gray-300 text-sm">Descripción del Proyecto <span className="text-red-500">*</span></Label>
+                  <Textarea
+                    id="description" name="description"
+                    value={formData.description} onChange={handleInputChange}
+                    className="flex-1 min-h-[120px] bg-[#1A1A1A] border-[#333333] focus:border-[#00C46A] focus:ring-1 focus:ring-[#00C46A] transition-all text-white placeholder-gray-500 rounded-lg p-3 resize-none"
+                    placeholder="Describe los desafíos, soluciones y tu rol..."
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="client">Cliente</Label>
-                  <Input
-                    id="client" name="client"
-                    value={formData.client} onChange={handleInputChange}
-                  />
+              </div>
+
+              {/* Sección de Enlaces y Tags */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-4 rounded-xl bg-[#0D0D0D] border border-[#222222]">
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="project_url" className="text-gray-300 text-sm flex items-center">
+                      <ExternalLink className="w-3.5 h-3.5 mr-1" /> URL Demo
+                    </Label>
+                    <Input
+                      id="project_url" name="project_url"
+                      value={formData.project_url} onChange={handleInputChange}
+                      className="bg-[#1A1A1A] border-[#333333] focus:border-[#00C46A] text-white"
+                      placeholder="https://midemo.com"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="github_url" className="text-gray-300 text-sm flex items-center">
+                      <Github className="w-3.5 h-3.5 mr-1" /> URL GitHub
+                    </Label>
+                    <Input
+                      id="github_url" name="github_url"
+                      value={formData.github_url} onChange={handleInputChange}
+                      className="bg-[#1A1A1A] border-[#333333] focus:border-[#00C46A] text-white"
+                      placeholder="https://github.com/..."
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="completion_date" className="text-gray-300 text-sm flex items-center">
+                      <Calendar className="w-3.5 h-3.5 mr-1" /> Fecha Completado
+                    </Label>
+                    <Input
+                      id="completion_date" name="completion_date"
+                      value={formData.completion_date} onChange={handleInputChange}
+                      className="bg-[#1A1A1A] border-[#333333] focus:border-[#00C46A] text-white"
+                      placeholder="Ej: Julio 2024"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="technologies" className="text-gray-300 text-sm">Tecnologías (separadas por coma)</Label>
+                    <Input
+                      id="technologies" name="technologies"
+                      value={formData.technologies} onChange={handleInputChange}
+                      className="bg-[#1A1A1A] border-[#333333] focus:border-[#00C46A] text-white"
+                      placeholder="React, Next, Tailwind..."
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Área Imagen */}
               <div className="space-y-2">
-                <Label htmlFor="description">Descripción</Label>
-                <Textarea
-                  id="description" name="description"
-                  value={formData.description} onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="project_url">URL del Proyecto</Label>
-                  <Input
-                    id="project_url" name="project_url"
-                    value={formData.project_url} onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="github_url">URL de GitHub</Label>
-                  <Input
-                    id="github_url" name="github_url"
-                    value={formData.github_url} onChange={handleInputChange}
-                    className="bg-[#0D0D0D] border-[#333333]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="completion_date">Fecha Completado</Label>
-                  <Input
-                    id="completion_date" name="completion_date"
-                    placeholder="Ej: Dic 2023"
-                    value={formData.completion_date} onChange={handleInputChange}
-                    className="bg-[#0D0D0D] border-[#333333]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="technologies">Tecnologías (separadas por coma)</Label>
-                  <Input
-                    id="technologies" name="technologies"
-                    placeholder="React, Node.js, AWS"
-                    value={formData.technologies} onChange={handleInputChange}
-                    className="bg-[#0D0D0D] border-[#333333]"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Imagen del Proyecto</Label>
-                <div className="border-2 border-dashed border-[#333333] rounded-lg p-4 text-center cursor-pointer hover:border-primary transition-colors relative">
+                <Label className="text-gray-300 text-sm">Portada del Proyecto</Label>
+                <div className="group border-2 border-dashed border-[#333333] bg-[#1A1A1A] rounded-xl p-6 flex items-center justify-center relative overflow-hidden flex-col gap-3 min-h-[160px] hover:border-[#00C46A] hover:bg-[#111] transition-all">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleImageChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                   />
                   {imagePreview ? (
-                    <div className="relative h-40 w-full">
-                      <img src={imagePreview} alt="Preview" className="h-full w-full object-contain" />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedImage(null);
-                          setImagePreview(null);
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <>
+                      <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-30 transition-opacity" />
+                      <div className="relative z-10 flex flex-col items-center">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="mb-2 shadow-lg hover:scale-105 transition-transform bg-red-500"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedImage(null);
+                            setImagePreview(null);
+                          }}
+                        >
+                          <X className="h-4 w-4 mr-1.5" /> Quitar
+                        </Button>
+                        <p className="text-sm font-medium text-white drop-shadow-md">Click para cambiar imagen</p>
+                      </div>
+                    </>
                   ) : (
-                    <div className="flex flex-col items-center py-4 text-gray-400">
-                      <Upload className="h-8 w-8 mb-2" />
-                      <p>Click o arrastra una imagen aquí</p>
+                    <div className="flex flex-col items-center py-4 text-gray-500 group-hover:text-[#00C46A] transition-colors relative z-10 pointer-events-none">
+                      <div className="w-12 h-12 rounded-full bg-[#222222] group-hover:bg-[#00C46A]/20 flex items-center justify-center mb-3 transition-colors">
+                        <Upload className="h-6 w-6" />
+                      </div>
+                      <p className="font-semibold text-gray-300 group-hover:text-white">Subir Imagen</p>
+                      <p className="text-xs mt-1">Arrastra y suelta tu archivo aquí (hasta 2MB)</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3 bg-primary/5 border border-primary/20 p-3 rounded-lg">
                 <input
                   type="checkbox"
                   id="featured"
                   name="featured"
                   checked={formData.featured}
                   onChange={(e) => setFormData(prev => ({ ...prev, featured: e.target.checked }))}
-                  className="rounded border-border bg-background"
+                  className="rounded border-[#00C46A] text-[#00C46A] h-5 w-5 bg-black cursor-pointer focus:ring-[#00C46A]"
                 />
-                <Label htmlFor="featured">Destacar Proyecto</Label>
+                <Label htmlFor="featured" className="text-gray-200 cursor-pointer font-medium select-none">
+                  Marcar como Proyecto Destacado ⭐
+                </Label>
               </div>
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Guardar Proyecto
+              <DialogFooter className="pt-4 border-t border-[#222222]">
+                <Button type="button" variant="outline" className="border-[#333] bg-[#111] hover:bg-[#222] text-white" onClick={() => setIsModalOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isSubmitting} className="bg-[#00C46A] text-black hover:bg-[#00A358] hover:scale-[1.02] transition-all px-8">
+                  {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                  {editingProject ? 'Actualizar Proyecto' : 'Guardar Proyecto'}
                 </Button>
               </DialogFooter>
             </form>
@@ -399,7 +478,7 @@ export function PortfolioSection() {
               <Card key={project.id} className="bg-card border-border hover-neon overflow-hidden">
                 <div className="relative">
                   <ImageWithFallback
-                    src={project.image_url || "/placeholder-project.jpg"}
+                    src={getImageUrl(project.image_url)}
                     alt={project.title}
                     fallbackSrc="/placeholder-project.jpg"
                     className="w-full h-48 object-cover"
@@ -493,7 +572,7 @@ export function PortfolioSection() {
               <Card key={project.id} className="bg-card border-border hover-neon overflow-hidden">
                 <div className="relative">
                   <ImageWithFallback
-                    src={project.image_url || "/placeholder-project.jpg"}
+                    src={getImageUrl(project.image_url)}
                     alt={project.title}
                     fallbackSrc="/placeholder-project.jpg"
                     className="w-full h-40 object-cover"

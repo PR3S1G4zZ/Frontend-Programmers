@@ -29,6 +29,13 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       // Loguear el error pero no redirigir automáticamente
       console.error('Error de autenticación: Token no válido o expirado');
     }
+    
+    // Capturar errores de validación de Laravel si existen
+    if (response.status === 422 && data.errors) {
+      const errorStrings = Object.values(data.errors).flat();
+      throw new Error(errorStrings.join('\\n'));
+    }
+
     throw new Error(data.message || 'Error en la petición');
   }
 

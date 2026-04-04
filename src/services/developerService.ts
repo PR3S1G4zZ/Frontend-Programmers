@@ -7,9 +7,22 @@ export type CompletedProject = {
   budget_min: number;
   budget_max: number;
   company_name: string;
-  company_id: number;
+  company_id?: number;
   completed_at: string;
-  created_at: string;
+  created_at?: string;
+};
+
+export type PortfolioProject = {
+  id: number;
+  title: string;
+  description: string;
+  image_url: string | null;
+  project_url: string | null;
+  github_url: string | null;
+  technologies: string[];
+  completion_date: string | null;
+  client: string | null;
+  featured: boolean;
 };
 
 export type DeveloperProfile = {
@@ -22,14 +35,17 @@ export type DeveloperProfile = {
   reviewsCount: number;
   completedProjects: number;
   completedProjectsList?: CompletedProject[];
+  portfolioProjectsList?: PortfolioProject[];
   availability: 'available' | 'busy' | 'unavailable';
   skills: string[];
   experience: number | null;
   languages: string[];
   bio: string;
+  links?: Record<string, string>;
   lastActive: string | undefined;
   isVerified: boolean;
   profilePicture?: string | null;
+  joinedAt?: string;
 };
 
 export async function fetchDevelopers(search?: string) {

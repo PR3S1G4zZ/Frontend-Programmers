@@ -3,7 +3,10 @@ import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { ScrollArea } from '../../ui/scroll-area';
-import { MapPin, Clock, Star, Briefcase, Code, Award, X, Calendar } from 'lucide-react';
+import {
+    MapPin, Clock, Star, Briefcase, Code, Award, X, Calendar,
+    Globe, Github, ExternalLink, FolderOpen, Layers
+} from 'lucide-react';
 import type { DeveloperProfile } from '../../../services/developerService';
 import { Skeleton } from '../../ui/skeleton';
 
@@ -22,7 +25,6 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
         try {
             const baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api').replace(/\/api\/?$/, '');
             if (path.startsWith('http')) {
-                // If the path contains localhost or 127.0.0.1 but the baseUrl does not, rewrite it
                 if ((path.includes('localhost') || path.includes('127.0.0.1')) && !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1')) {
                     const urlPath = new URL(path).pathname;
                     return `${baseUrl}${urlPath}`;
@@ -48,49 +50,50 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                 {isLoading || !developer ? (
                     <div className="p-6 space-y-6">
                         <div className="flex items-start space-x-4">
-                            <Skeleton className="h-24 w-24 rounded-full bg-[#333333]" />
+                            <Skeleton className="h-24 w-24 rounded-full bg-muted" />
                             <div className="space-y-2 flex-1">
-                                <Skeleton className="h-6 w-1/3 bg-[#333333]" />
-                                <Skeleton className="h-4 w-1/4 bg-[#333333]" />
-                                <Skeleton className="h-4 w-full bg-[#333333]" />
+                                <Skeleton className="h-6 w-1/3 bg-muted" />
+                                <Skeleton className="h-4 w-1/4 bg-muted" />
+                                <Skeleton className="h-4 w-full bg-muted" />
                             </div>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
-                            <Skeleton className="h-20 bg-[#333333]" />
-                            <Skeleton className="h-20 bg-[#333333]" />
-                            <Skeleton className="h-20 bg-[#333333]" />
+                            <Skeleton className="h-20 bg-muted" />
+                            <Skeleton className="h-20 bg-muted" />
+                            <Skeleton className="h-20 bg-muted" />
                         </div>
                         <div className="space-y-2">
-                            <Skeleton className="h-4 w-1/4 bg-[#333333]" />
+                            <Skeleton className="h-4 w-1/4 bg-muted" />
                             <div className="flex gap-2">
-                                <Skeleton className="h-8 w-16 bg-[#333333]" />
-                                <Skeleton className="h-8 w-16 bg-[#333333]" />
-                                <Skeleton className="h-8 w-16 bg-[#333333]" />
+                                <Skeleton className="h-8 w-16 bg-muted" />
+                                <Skeleton className="h-8 w-16 bg-muted" />
+                                <Skeleton className="h-8 w-16 bg-muted" />
                             </div>
                         </div>
                     </div>
                 ) : (
                     <div className="flex flex-col h-full bg-background overflow-hidden relative">
-                        {/* Hero Section / Banner */}
-                        <div className="relative h-20 sm:h-32 bg-gradient-to-r from-[#2a2a2a] to-[#1a1a1a] overflow-hidden shrink-0">
-                            <div className="absolute inset-0 bg-grid-black/[0.02] dark:bg-grid-white/[0.02] bg-[length:20px_20px]" />
-                            <div className="absolute top-0 right-0 p-4 sm:p-8 opacity-10">
-                                <Code className="h-32 sm:h-64 w-32 sm:w-64 text-foreground transform rotate-12" />
+                        {/* Hero Banner */}
+                        <div className="relative h-20 sm:h-28 bg-gradient-to-br from-primary/30 via-primary/10 to-background overflow-hidden shrink-0">
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,_var(--tw-gradient-stops))] from-primary/20 to-transparent" />
+                            <div className="absolute top-0 right-0 p-4 sm:p-6 opacity-[0.07]">
+                                <Code className="h-24 sm:h-40 w-24 sm:w-40 text-foreground transform rotate-12" />
                             </div>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="absolute top-4 right-4 z-20 text-foreground/70 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 rounded-full"
+                                className="absolute top-3 right-3 z-20 text-foreground/60 hover:text-foreground hover:bg-background/50 rounded-full backdrop-blur-sm"
                                 onClick={onClose}
                             >
-                                <X className="h-5 w-5 md:h-6 md:w-6" />
+                                <X className="h-5 w-5" />
                             </Button>
                         </div>
 
-                        <div className="px-4 sm:px-8 pb-4 flex-1 overflow-hidden flex flex-col relative z-10">
-                            {/* Profile Header (Overlapping Banner) */}
-                            <div className="flex flex-col md:flex-row gap-4 sm:gap-6 -mt-10 sm:-mt-16 relative z-10 mb-6 shrink-0">
-                                <Avatar className="h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 border-4 border-background shadow-2xl ring-4 ring-primary/10 bg-card mx-auto md:mx-0">
+                        {/* Main Content Area */}
+                        <div className="px-4 sm:px-6 lg:px-8 pb-4 flex-1 overflow-hidden flex flex-col relative z-10">
+                            {/* Profile Header */}
+                            <div className="flex flex-col md:flex-row gap-4 -mt-10 sm:-mt-14 relative z-10 mb-5 shrink-0">
+                                <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background shadow-xl ring-2 ring-primary/20 bg-card mx-auto md:mx-0 shrink-0">
                                     {developer.profilePicture ? (
                                         <AvatarImage
                                             src={getImageUrl(developer.profilePicture)}
@@ -98,159 +101,285 @@ export function DeveloperProfileModal({ isOpen, onClose, developer, isLoading }:
                                             className="object-cover"
                                         />
                                     ) : null}
-                                    <AvatarFallback className="bg-primary/20 text-xl sm:text-2xl md:text-3xl font-bold text-primary uppercase">
+                                    <AvatarFallback className="bg-primary/20 text-xl sm:text-2xl font-bold text-primary uppercase">
                                         {developer.name.split(' ').slice(0, 2).map(n => n[0]).join('')}
                                     </AvatarFallback>
                                 </Avatar>
 
-                                <div className="flex-1 pt-2 sm:pt-16 md:pt-20 space-y-2 text-center md:text-left">
-                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
-                                        <div>
-                                            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center justify-center md:justify-start gap-1 sm:gap-2">
-                                                {developer.name}
+                                <div className="flex-1 pt-1 sm:pt-10 md:pt-12 space-y-1.5 text-center md:text-left min-w-0">
+                                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground flex items-center justify-center md:justify-start gap-1.5 flex-wrap">
+                                                <span className="truncate">{developer.name}</span>
                                                 {developer.isVerified && (
-                                                    <span className="bg-primary/10 text-primary border border-primary/20 p-1 rounded-full">
-                                                        <Award className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                    <span className="bg-primary/10 text-primary border border-primary/20 p-0.5 rounded-full shrink-0">
+                                                        <Award className="h-3.5 w-3.5" />
                                                     </span>
                                                 )}
                                             </h2>
-                                            <p className="text-base sm:text-lg md:text-xl text-primary font-medium">{developer.title}</p>
+                                            <p className="text-sm sm:text-base text-primary font-medium truncate">{developer.title}</p>
                                         </div>
-                                        <div className="text-center md:text-right hidden md:block">
-                                            <p className="text-2xl sm:text-3xl font-bold text-foreground">${developer.hourlyRate || 0}<span className="text-sm text-muted-foreground font-normal">/h</span></p>
+                                        <div className="text-center md:text-right shrink-0 hidden md:block">
+                                            <p className="text-xl sm:text-2xl font-bold text-foreground">
+                                                ${developer.hourlyRate || 0}
+                                                <span className="text-xs text-muted-foreground font-normal">/h</span>
+                                            </p>
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 sm:gap-x-6 sm:gap-y-3 text-xs sm:text-sm text-muted-foreground">
-                                        <span className="flex items-center gap-1.5 hover:text-foreground transition-colors">
-                                            <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {developer.location || 'Ubicación no especificada'}
+                                    <div className="flex flex-wrap justify-center md:justify-start gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
+                                        <span className="flex items-center gap-1 hover:text-foreground transition-colors">
+                                            <MapPin className="h-3 w-3 shrink-0" /> {developer.location || 'Sin ubicación'}
                                         </span>
-                                        <span className={`flex items-center gap-1.5 font-medium ${developer.availability === 'available' ? 'text-green-500' : 'text-muted-foreground'}`}>
-                                            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                            {developer.availability === 'available' ? 'Disponible ahora' : 'Consultar disponibilidad'}
+                                        <span className={`flex items-center gap-1 font-medium ${developer.availability === 'available' ? 'text-green-500' : 'text-muted-foreground'}`}>
+                                            <Clock className="h-3 w-3 shrink-0" />
+                                            {developer.availability === 'available' ? 'Disponible' : developer.availability === 'busy' ? 'Ocupado' : 'No disponible'}
                                         </span>
-                                        <span className="flex items-center gap-1.5 text-yellow-500">
-                                            <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" />
+                                        <span className="flex items-center gap-1 text-yellow-500">
+                                            <Star className="h-3 w-3 fill-current shrink-0" />
                                             <span className="text-foreground font-bold">{developer.rating?.toFixed(1) || '0.0'}</span>
-                                            <span className="text-muted-foreground">({developer.reviewsCount || 0} reseñas)</span>
+                                            <span className="text-muted-foreground">({developer.reviewsCount || 0})</span>
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
-                            <ScrollArea className="flex-1 pr-2 sm:pr-4 -mr-2 sm:-mr-4">
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 pb-8">
-                                    {/* Left Content (Bio/Skills/Portfolio) - Takes 8 columns on lg */}
-                                    <div className="lg:col-span-8 space-y-6 sm:space-y-8">
+                            {/* Scrollable Content */}
+                            <ScrollArea className="flex-1 -mr-2 sm:-mr-3 pr-2 sm:pr-3">
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 pb-6">
+                                    {/* Left Column: Main Content */}
+                                    <div className="lg:col-span-8 space-y-5">
                                         {/* Bio */}
-                                        <section className="bg-background p-5 sm:p-6 rounded-2xl border border-border shadow-sm">
-                                            <h3 className="text-base sm:text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                                                <div className="bg-primary/10 p-2 rounded-lg text-primary border border-primary/20">
-                                                    <Briefcase className="h-4 w-4 sm:h-5 sm:w-5" />
+                                        <section className="bg-card p-4 sm:p-5 rounded-xl border border-border">
+                                            <h3 className="text-sm sm:text-base font-bold text-foreground mb-3 flex items-center gap-2">
+                                                <div className="bg-primary/10 p-1.5 rounded-lg text-primary">
+                                                    <Briefcase className="h-4 w-4" />
                                                 </div>
                                                 Sobre mí
                                             </h3>
-                                            <p className="text-muted-foreground leading-relaxed text-sm">
+                                            <p className="text-muted-foreground leading-relaxed text-xs sm:text-sm">
                                                 {developer.bio || 'Este desarrollador aún no ha escrito una biografía profesional.'}
                                             </p>
                                         </section>
 
                                         {/* Skills */}
-                                        <section className="bg-background p-5 sm:p-6 rounded-2xl border border-border shadow-sm">
-                                            <h3 className="text-base sm:text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                                                <div className="bg-primary/10 p-2 rounded-lg text-primary border border-primary/20">
-                                                    <Code className="h-4 w-4 sm:h-5 sm:w-5" />
+                                        <section className="bg-card p-4 sm:p-5 rounded-xl border border-border">
+                                            <h3 className="text-sm sm:text-base font-bold text-foreground mb-3 flex items-center gap-2">
+                                                <div className="bg-primary/10 p-1.5 rounded-lg text-primary">
+                                                    <Code className="h-4 w-4" />
                                                 </div>
                                                 Tecnologías & Herramientas
                                             </h3>
-                                            <div className="flex flex-wrap gap-2 md:gap-3">
+                                            <div className="flex flex-wrap gap-1.5">
                                                 {(Array.isArray(developer.skills) && developer.skills.length > 0) ? developer.skills.map(skill => (
-                                                    <Badge key={skill} variant="secondary" className="px-3 py-1 bg-muted/50 text-foreground border border-border hover:border-primary/50 hover:bg-primary/10 transition-colors text-xs">
+                                                    <Badge key={skill} variant="secondary" className="px-2.5 py-0.5 bg-muted/50 text-foreground border border-border hover:border-primary/50 hover:bg-primary/10 transition-colors text-xs">
                                                         {skill}
                                                     </Badge>
                                                 )) : (
-                                                    <p className="text-sm text-muted-foreground italic">No hay habilidades listadas.</p>
+                                                    <p className="text-xs text-muted-foreground italic">No hay habilidades listadas.</p>
                                                 )}
                                             </div>
                                         </section>
 
-                                        {/* Portfolio */}
-                                        <section className="bg-background p-5 sm:p-6 rounded-2xl border border-border shadow-sm">
-                                            <h3 className="text-base sm:text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                                                <div className="bg-primary/10 p-2 rounded-lg text-primary border border-primary/20">
-                                                    <Award className="h-4 w-4 sm:h-5 sm:w-5" />
-                                                </div>
-                                                Proyectos Completados en la Plataforma
-                                            </h3>
-                                            <div className="flex flex-col gap-4">
-                                                {(Array.isArray(developer.completedProjectsList) && developer.completedProjectsList.length > 0) ? 
-                                                    developer.completedProjectsList.map((project) => (
-                                                    <div key={`proj-${project.id}`} className="group bg-card rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all hover:shadow-lg p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start gap-4">
-                                                        <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg bg-muted flex items-center justify-center shrink-0 border border-border">
-                                                            <Briefcase className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <h4 className="font-bold text-foreground text-base sm:text-lg group-hover:text-primary transition-colors">{project.title}</h4>
-                                                            <p className="text-xs sm:text-sm text-muted-foreground mt-1 mb-2">Para: <span className="text-foreground font-medium">{project.company_name}</span></p>
-                                                            <div className="flex items-center text-xs text-muted-foreground">
-                                                                <Calendar className="h-3 w-3 mr-1" />
-                                                                {new Date(project.completed_at).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                                        {/* Portfolio Projects (Personal) */}
+                                        {Array.isArray(developer.portfolioProjectsList) && developer.portfolioProjectsList.length > 0 && (
+                                            <section className="bg-card p-4 sm:p-5 rounded-xl border border-border">
+                                                <h3 className="text-sm sm:text-base font-bold text-foreground mb-3 flex items-center gap-2">
+                                                    <div className="bg-purple-500/10 p-1.5 rounded-lg text-purple-500">
+                                                        <FolderOpen className="h-4 w-4" />
+                                                    </div>
+                                                    Portafolio Personal
+                                                    <Badge variant="secondary" className="ml-auto text-[10px] bg-purple-500/10 text-purple-500 border-purple-500/20">
+                                                        {developer.portfolioProjectsList.length} proyecto{developer.portfolioProjectsList.length !== 1 ? 's' : ''}
+                                                    </Badge>
+                                                </h3>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    {developer.portfolioProjectsList.map((project) => (
+                                                        <div key={`portfolio-${project.id}`} className="group bg-background rounded-lg overflow-hidden border border-border hover:border-purple-500/40 transition-all hover:shadow-md">
+                                                            {/* Project Image */}
+                                                            {project.image_url && (
+                                                                <div className="h-28 sm:h-32 bg-muted overflow-hidden">
+                                                                    <img
+                                                                        src={getImageUrl(project.image_url)}
+                                                                        alt={project.title}
+                                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                            <div className="p-3">
+                                                                <h4 className="font-semibold text-foreground text-sm group-hover:text-purple-500 transition-colors truncate">
+                                                                    {project.title}
+                                                                </h4>
+                                                                {project.description && (
+                                                                    <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                                                                        {project.description}
+                                                                    </p>
+                                                                )}
+                                                                {/* Technologies */}
+                                                                {Array.isArray(project.technologies) && project.technologies.length > 0 && (
+                                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                                        {project.technologies.slice(0, 3).map((tech, idx) => (
+                                                                            <Badge key={idx} variant="outline" className="text-[10px] px-1.5 py-0 bg-muted/30 text-muted-foreground border-border">
+                                                                                {tech}
+                                                                            </Badge>
+                                                                        ))}
+                                                                        {project.technologies.length > 3 && (
+                                                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-muted/30 text-muted-foreground border-border">
+                                                                                +{project.technologies.length - 3}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                                {/* Links */}
+                                                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
+                                                                    {project.project_url && (
+                                                                        <a href={project.project_url} target="_blank" rel="noopener noreferrer"
+                                                                            className="text-muted-foreground hover:text-primary transition-colors">
+                                                                            <ExternalLink className="h-3.5 w-3.5" />
+                                                                        </a>
+                                                                    )}
+                                                                    {project.github_url && (
+                                                                        <a href={project.github_url} target="_blank" rel="noopener noreferrer"
+                                                                            className="text-muted-foreground hover:text-foreground transition-colors">
+                                                                            <Github className="h-3.5 w-3.5" />
+                                                                        </a>
+                                                                    )}
+                                                                    {project.client && (
+                                                                        <span className="text-[10px] text-muted-foreground ml-auto truncate">
+                                                                            {project.client}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div className="text-left sm:text-right mt-2 sm:mt-0 whitespace-nowrap">
-                                                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-semibold px-2 sm:px-3">
-                                                                ${project.budget_min} - ${project.budget_max}
-                                                            </Badge>
-                                                        </div>
-                                                    </div>
-                                                )) : (
-                                                    <div className="text-center p-8 border-2 border-dashed border-border rounded-xl">
-                                                        <p className="text-sm text-muted-foreground">Este usuario recién se une y no tiene proyectos completados todavía.</p>
-                                                    </div>
+                                                    ))}
+                                                </div>
+                                            </section>
+                                        )}
+
+                                        {/* Platform Completed Projects */}
+                                        <section className="bg-card p-4 sm:p-5 rounded-xl border border-border">
+                                            <h3 className="text-sm sm:text-base font-bold text-foreground mb-3 flex items-center gap-2">
+                                                <div className="bg-primary/10 p-1.5 rounded-lg text-primary">
+                                                    <Layers className="h-4 w-4" />
+                                                </div>
+                                                Proyectos en la Plataforma
+                                                {Array.isArray(developer.completedProjectsList) && developer.completedProjectsList.length > 0 && (
+                                                    <Badge variant="secondary" className="ml-auto text-[10px] bg-primary/10 text-primary border-primary/20">
+                                                        {developer.completedProjectsList.length}
+                                                    </Badge>
                                                 )}
+                                            </h3>
+                                            <div className="flex flex-col gap-3">
+                                                {(Array.isArray(developer.completedProjectsList) && developer.completedProjectsList.length > 0) ?
+                                                    developer.completedProjectsList.map((project) => (
+                                                        <div key={`proj-${project.id}`} className="group bg-background rounded-lg overflow-hidden border border-border hover:border-primary/40 transition-all p-3 sm:p-4 flex items-start gap-3">
+                                                            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/5 flex items-center justify-center shrink-0 border border-primary/10">
+                                                                <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-primary/60 group-hover:text-primary transition-colors" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <h4 className="font-semibold text-foreground text-sm group-hover:text-primary transition-colors truncate">{project.title}</h4>
+                                                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                                    Para: <span className="text-foreground/80 font-medium">{project.company_name}</span>
+                                                                </p>
+                                                                <div className="flex items-center gap-3 mt-1.5">
+                                                                    <span className="flex items-center text-[11px] text-muted-foreground">
+                                                                        <Calendar className="h-3 w-3 mr-1 shrink-0" />
+                                                                        {new Date(project.completed_at).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}
+                                                                    </span>
+                                                                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/15 text-[10px] px-1.5 py-0">
+                                                                        ${project.budget_min} - ${project.budget_max}
+                                                                    </Badge>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )) : (
+                                                        <div className="text-center p-6 border border-dashed border-border rounded-lg">
+                                                            <Layers className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                                                            <p className="text-xs text-muted-foreground">Sin proyectos completados en la plataforma todavía.</p>
+                                                        </div>
+                                                    )}
                                             </div>
                                         </section>
                                     </div>
 
-                                    {/* Right Sidebar (Stats/Contact) - Takes 4 columns on lg */}
-                                    <div className="lg:col-span-4 space-y-4 sm:space-y-6">
-                                        <div className="bg-card rounded-xl p-5 border border-border shadow-md lg:sticky lg:top-0">
-                                            <div className="flex md:hidden justify-between items-center mb-6 border-b border-border pb-4">
-                                                <span className="text-muted-foreground text-sm">Tarifa Estimada</span>
-                                                <span className="text-foreground font-bold text-lg">${developer.hourlyRate || 0}/h</span>
+                                    {/* Right Sidebar */}
+                                    <div className="lg:col-span-4 space-y-4">
+                                        {/* CTA Card */}
+                                        <div className="bg-card rounded-xl p-4 sm:p-5 border border-border shadow-sm lg:sticky lg:top-0">
+                                            {/* Mobile-only rate */}
+                                            <div className="flex md:hidden justify-between items-center mb-4 border-b border-border pb-3">
+                                                <span className="text-muted-foreground text-xs">Tarifa Estimada</span>
+                                                <span className="text-foreground font-bold text-base">${developer.hourlyRate || 0}/h</span>
                                             </div>
 
-                                            <div className="space-y-3">
-                                                <Button className="w-full text-sm sm:text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all">
+                                            <div className="space-y-2.5">
+                                                <Button className="w-full text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-sm">
                                                     Invitar a un Proyecto
                                                 </Button>
-                                                <Button variant="outline" className="w-full border-border text-foreground hover:bg-accent hover:text-accent-foreground text-sm sm:text-base">
+                                                <Button variant="outline" className="w-full border-border text-foreground hover:bg-accent hover:text-accent-foreground text-sm">
                                                     Contactar
                                                 </Button>
                                             </div>
 
-                                            <div className="pt-6 mt-6 border-t border-border space-y-4">
-                                                <div className="flex justify-between items-center text-sm">
-                                                    <span className="text-muted-foreground">Experiencia Mín.</span>
+                                            {/* Stats */}
+                                            <div className="pt-4 mt-4 border-t border-border space-y-3">
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-muted-foreground">Experiencia</span>
                                                     <span className="text-foreground font-medium">{developer.experience || 0} años</span>
                                                 </div>
-                                                <div className="flex justify-between items-center text-sm">
+                                                <div className="flex justify-between items-center text-xs">
                                                     <span className="text-muted-foreground">Completados</span>
                                                     <span className="text-foreground font-medium">{developer.completedProjects} proyectos</span>
                                                 </div>
-                                                <div className="flex justify-between items-center text-sm">
+                                                <div className="flex justify-between items-center text-xs">
                                                     <span className="text-muted-foreground">Desempeño</span>
-                                                    <span className="text-primary font-semibold">{developer.rating >= 4.5 ? 'Excelente' : 'Bueno'}</span>
+                                                    <span className="text-primary font-semibold">
+                                                        {developer.rating >= 4.5 ? 'Excelente' : developer.rating >= 3.5 ? 'Bueno' : 'En crecimiento'}
+                                                    </span>
                                                 </div>
+                                                {developer.joinedAt && (
+                                                    <div className="flex justify-between items-center text-xs">
+                                                        <span className="text-muted-foreground">Se unió</span>
+                                                        <span className="text-foreground font-medium">{developer.joinedAt}</span>
+                                                    </div>
+                                                )}
                                             </div>
+
+                                            {/* Links */}
+                                            {developer.links && Object.keys(developer.links).length > 0 && (
+                                                <div className="pt-4 mt-4 border-t border-border">
+                                                    <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5">Enlaces</h4>
+                                                    <div className="space-y-1.5">
+                                                        {developer.links.website && (
+                                                            <a href={developer.links.website} target="_blank" rel="noopener noreferrer"
+                                                                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors group">
+                                                                <Globe className="h-3.5 w-3.5 shrink-0" />
+                                                                <span className="truncate group-hover:underline">Website</span>
+                                                            </a>
+                                                        )}
+                                                        {developer.links.github && (
+                                                            <a href={developer.links.github} target="_blank" rel="noopener noreferrer"
+                                                                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors group">
+                                                                <Github className="h-3.5 w-3.5 shrink-0" />
+                                                                <span className="truncate group-hover:underline">GitHub</span>
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
+                                        {/* Languages */}
                                         {Array.isArray(developer.languages) && developer.languages.length > 0 && (
-                                            <div className="bg-card rounded-xl p-5 border border-border shadow-sm">
-                                                <h4 className="text-xs sm:text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Idiomas</h4>
-                                                <div className="flex flex-wrap gap-2">
+                                            <div className="bg-card rounded-xl p-4 border border-border">
+                                                <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5">Idiomas</h4>
+                                                <div className="flex flex-wrap gap-1.5">
                                                     {developer.languages.map((lang, idx) => (
-                                                        <Badge key={idx} variant="outline" className="bg-muted text-muted-foreground border-border">{lang}</Badge>
+                                                        <Badge key={idx} variant="outline" className="bg-muted/50 text-muted-foreground border-border text-xs">
+                                                            {lang}
+                                                        </Badge>
                                                     ))}
                                                 </div>
                                             </div>

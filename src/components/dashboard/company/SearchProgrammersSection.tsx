@@ -24,7 +24,7 @@ import {
   Code
 } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
-import { fetchDevelopers, type DeveloperProfile } from '../../../services/developerService';
+import { fetchDevelopers, fetchDeveloper, type DeveloperProfile } from '../../../services/developerService';
 import { DeveloperProfileModal } from './DeveloperProfileModal';
 import { fetchFavorites, toggleFavorite as toggleFavoriteApi } from '../../../services/favoriteService';
 import { createConversation } from '../../../services/conversationService';
@@ -53,6 +53,7 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDeveloper, setSelectedDeveloper] = useState<DeveloperProfile | null>(null);
+  const [isModalLoading, setIsModalLoading] = useState(false);
   // Paginación: mostrar de a 12 developers con "Cargar más"
   const [visibleCount, setVisibleCount] = useState(12);
   const { showAlert } = useSweetAlert();
@@ -249,6 +250,37 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
         text: 'No se pudo iniciar la conversación.',
         type: 'error'
       });
+    }
+  };
+
+  const handleViewProfile = async (developer: DeveloperProfile) => {
+    setIsModalLoading(true);
+    try {
+      const response = await fetchDeveloper(developer.id);
+      if (response.data) {
+        // Normalize skills/languages from the detailed response
+        const normalizeArray = (val: any): any[] => {
+          if (Array.isArray(val)) return val;
+          if (typeof val === 'string') { try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; } }
+          return [];
+        };
+        const detailedDev: DeveloperProfile = {
+          ...response.data,
+          skills: normalizeArray(response.data.skills).map((s: any) =>
+            typeof s === 'string' ? s : (s.name ?? String(s))
+          ),
+          languages: normalizeArray(response.data.languages).map((l: any) =>
+            typeof l === 'string' ? l : (l.name ?? String(l))
+          ),
+        };
+        setSelectedDeveloper(detailedDev);
+      }
+    } catch (error) {
+      console.error("Error fetching developer details", error);
+      // Fallback: use the list data (without portfolio)
+      setSelectedDeveloper(developer);
+    } finally {
+      setIsModalLoading(false);
     }
   };
 
@@ -647,7 +679,7 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
                       <Button
                         variant="outline"
                         className="border-border bg-background text-foreground hover:bg-card hover:border-muted-foreground/30 transition-all"
-                        onClick={() => setSelectedDeveloper(developer)}
+                        onClick={() => handleViewProfile(developer)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -703,10 +735,10 @@ export function SearchProgrammersSection({ onSectionChange }: SearchProgrammersS
       </div>
       {/* Developer Profile Modal */}
       <DeveloperProfileModal
-        isOpen={!!selectedDeveloper}
-        onClose={() => setSelectedDeveloper(null)}
+        isOpen={!!selectedDeveloper || isModalLoading}
+        onClose={() => { setSelectedDeveloper(null); setIsModalLoading(false); }}
         developer={selectedDeveloper}
-        isLoading={false} // Data is already loaded in list for now, or fetch detail if needed
+        isLoading={isModalLoading}
       />
     </div >
   );
